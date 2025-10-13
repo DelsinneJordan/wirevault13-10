@@ -14,8 +14,8 @@
         </div>
     </header>
     <main class="container">
-        {{with $content := .ContentTemplate}}
-            {{template $content .}}
+        {{with .Content}}
+            {{.}}
         {{end}}
     </main>
     <footer class="app-footer">

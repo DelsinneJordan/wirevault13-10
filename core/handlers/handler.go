@@ -82,7 +82,13 @@ func (h *Handler) render(w http.ResponseWriter, templateName string, data any) {
 	if _, ok := viewData["BodyClass"]; !ok {
 		viewData["BodyClass"] = ""
 	}
-	viewData["ContentTemplate"] = templateName + "#content"
+	contentTemplate := templateName + "#content"
+	var contentBuf bytes.Buffer
+	if err := h.Templates.ExecuteTemplate(&contentBuf, contentTemplate, viewData); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	viewData["Content"] = template.HTML(contentBuf.String())
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := h.Templates.ExecuteTemplate(w, templateName, viewData); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
