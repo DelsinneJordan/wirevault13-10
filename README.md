@@ -56,3 +56,16 @@ gofmt -w main.go core/**/*.go
 - The admin password defaults to `admin`. Update it immediately from **Settings** in production.
 - CSV/XLSX exports include token short IDs, PINs, site short IDs, and fully qualified QR URLs.
 - Uploaded media is stored on disk; ensure the `media/` directory is writable in deployment environments.
+
+## Deploying with Dokploy
+
+The repository includes a production-ready container definition (`Dockerfile`) and a Dokploy manifest (`deploy/dokploy.yaml`). You can either import the manifest directly in Dokploy or reproduce the steps manually through the UI:
+
+1. **Create a project:** Import this Git repository in Dokploy and choose *Dockerfile* as the deployment method. Point the build context to the repo root and the Dockerfile to `Dockerfile`.
+2. **Expose the web service:** Keep the default HTTP port at `8080`. Dokploy will proxy it through Traefik so you only need to map the internal port.
+3. **Persist application data:** Add two Docker volumes and mount them to `/app/data` and `/app/media`. These hold the JSON datastore and uploaded documents respectively.
+4. **Configure environment variables:** Set `ADDR` to `:8080` (or whichever internal port you prefer). After the first deployment, sign in with the default admin password (`admin`) and update it from *Settings*.
+5. **Health check:** Point Dokploy's health check to `GET /` with a 30-second interval; the route responds with the PIN entry page when healthy.
+6. **Deploy:** Trigger a build. Dokploy will compile the Go binary in the first stage, produce the runtime image, and start the container.
+
+If you maintain infrastructure-as-code, check in `deploy/dokploy.yaml` and use Dokploy's Git-based deploys to keep configuration aligned with the repository. The manifest defines the web service, port exposure, persistent volumes, and a basic health probe.
