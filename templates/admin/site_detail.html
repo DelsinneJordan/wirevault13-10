@@ -1,0 +1,140 @@
+{{define "admin/site_detail.html"}}
+{{template "base" .}}
+{{end}}
+
+{{define "admin/site_detail.html#content"}}
+<section class="admin-header">
+    <h1>{{.Site.Address}}</h1>
+    <nav class="admin-nav">
+        <a href="/admin/sites" class="nav-link">Sites</a>
+        <a href="/admin/tokens" class="nav-link">Tokens</a>
+        <a href="/admin/settings" class="nav-link">Settings</a>
+        <a href="/admin/logout" class="nav-link">Sign out</a>
+    </nav>
+</section>
+
+{{if .Message}}
+<div class="alert {{if eq .MessageType "error"}}alert-error{{else if eq .MessageType "success"}}alert-success{{end}}">{{.Message}}</div>
+{{end}}
+
+<section class="card">
+    <h2 class="card-title">Public details</h2>
+    <form method="post" class="form">
+        <label for="address">Site address</label>
+        <input type="text" id="address" name="address" value="{{.Site.Address}}" required>
+
+        <label for="short_id">Site short ID</label>
+        <input type="text" id="short_id" name="short_id" value="{{.Site.ShortID}}" maxlength="12">
+
+        <label for="customer_name">Customer name <span class="muted">(admin only)</span></label>
+        <input type="text" id="customer_name" name="customer_name" value="{{.Site.CustomerName}}">
+
+        <label for="notes">Notes</label>
+        <textarea id="notes" name="notes" rows="3">{{.Site.Notes}}</textarea>
+
+        <button type="submit" class="btn btn-primary">Save changes</button>
+    </form>
+</section>
+
+<section class="grid">
+    <div class="grid-column">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Boards</h2>
+                <a class="btn btn-secondary" href="/admin/site/{{.Site.ID}}/boards/new">Add board</a>
+            </div>
+            {{if .Site.Boards}}
+            <ul class="item-list">
+                {{range .Site.Boards}}
+                <li class="item">
+                    <div>
+                        <h3>{{.Name}}</h3>
+                        <p class="muted">{{.BoardType}} • {{.SupplyType}}</p>
+                    </div>
+                    <div class="actions">
+                        <a class="btn btn-link" href="/admin/site/{{$.Site.ID}}/boards/{{.ID}}">Edit</a>
+                        <form method="post" action="/admin/site/{{$.Site.ID}}/boards/{{.ID}}/delete" onsubmit="return confirm('Remove this board?');">
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </form>
+                    </div>
+                </li>
+                {{end}}
+            </ul>
+            {{else}}
+            <p class="empty">No boards registered.</p>
+            {{end}}
+        </div>
+    </div>
+    <div class="grid-column">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Appliances</h2>
+                <a class="btn btn-secondary" href="/admin/site/{{.Site.ID}}/appliances/new">Add appliance</a>
+            </div>
+            {{if .Site.Appliances}}
+            <ul class="item-list">
+                {{range .Site.Appliances}}
+                <li class="item">
+                    <div>
+                        <h3>{{.Name}}</h3>
+                        <p class="muted">{{categoryLabel .Category}} • {{.Brand}} {{.Model}}</p>
+                    </div>
+                    <div class="actions">
+                        <a class="btn btn-link" href="/admin/site/{{$.Site.ID}}/appliances/{{.ID}}">Edit</a>
+                        <form method="post" action="/admin/site/{{$.Site.ID}}/appliances/{{.ID}}/delete" onsubmit="return confirm('Remove this appliance?');">
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </form>
+                    </div>
+                </li>
+                {{end}}
+            </ul>
+            {{else}}
+            <p class="empty">No appliances yet.</p>
+            {{end}}
+        </div>
+    </div>
+</section>
+
+<section class="card">
+    <h2 class="card-title">QR tokens</h2>
+    <div class="token-grid">
+        <div>
+            <h3>Assigned tokens</h3>
+            {{if .AssignedTokens}}
+            <ul class="item-list">
+                {{range .AssignedTokens}}
+                <li class="item">
+                    <div>
+                        <strong>{{.ShortID}}</strong>
+                        <p class="muted">PIN {{.PIN}}</p>
+                    </div>
+                    <form method="post" action="/admin/site/{{$.Site.ID}}/tokens/remove">
+                        <input type="hidden" name="token_id" value="{{.ID}}">
+                        <button type="submit" class="btn btn-danger">Unassign</button>
+                    </form>
+                </li>
+                {{end}}
+            </ul>
+            {{else}}
+            <p class="empty">No tokens assigned.</p>
+            {{end}}
+        </div>
+        <div>
+            <h3>Assign a token</h3>
+            {{if .AvailableTokens}}
+            <form method="post" action="/admin/site/{{.Site.ID}}/tokens/assign" class="form inline">
+                <label for="token_id">Available tokens</label>
+                <select id="token_id" name="token_id">
+                    {{range .AvailableTokens}}
+                    <option value="{{.ID}}">{{.ShortID}} — PIN {{.PIN}}</option>
+                    {{end}}
+                </select>
+                <button type="submit" class="btn btn-secondary">Assign</button>
+            </form>
+            {{else}}
+            <p class="empty">No unassigned tokens available. <a href="/admin/tokens">Generate more tokens</a>.</p>
+            {{end}}
+        </div>
+    </div>
+</section>
+{{end}}

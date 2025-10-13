@@ -1,0 +1,45 @@
+{{define "admin/settings.html"}}
+{{template "base" .}}
+{{end}}
+
+{{define "admin/settings.html#content"}}
+<section class="admin-header">
+    <h1>Settings</h1>
+    <nav class="admin-nav">
+        <a href="/admin/sites" class="nav-link">Sites</a>
+        <a href="/admin/tokens" class="nav-link">Tokens</a>
+        <a href="/admin/logout" class="nav-link">Sign out</a>
+    </nav>
+</section>
+
+<section class="grid">
+    <div class="grid-column">
+        <div class="card">
+            <h2 class="card-title">Public base URL</h2>
+            <p class="muted">Used when generating QR links for sticker printing.</p>
+            <form method="post" class="form">
+                <label for="public_url">Base URL</label>
+                <input type="url" id="public_url" name="public_url" value="{{.PublicBaseURL}}" placeholder="https://example.com">
+                <button type="submit" class="btn btn-primary">Update</button>
+            </form>
+            {{if .Message}}
+            <div class="alert {{if eq .MessageType "error"}}alert-error{{else if eq .MessageType "success"}}alert-success{{end}}">{{.Message}}</div>
+            {{end}}
+            {{if .Error}}
+            <div class="alert alert-error">{{.Error}}</div>
+            {{end}}
+        </div>
+    </div>
+    <div class="grid-column">
+        <div class="card">
+            <h2 class="card-title">Admin password</h2>
+            <p class="muted">Set a new password to protect the admin area.</p>
+            <form method="post" class="form">
+                <label for="new_password">New password</label>
+                <input type="password" id="new_password" name="new_password" minlength="6">
+                <button type="submit" class="btn btn-secondary">Change password</button>
+            </form>
+        </div>
+    </div>
+</section>
+{{end}}
