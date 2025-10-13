@@ -13,7 +13,7 @@
 
 <section class="card">
     <h2 class="card-title">Appliance details</h2>
-    <form method="post" class="form">
+    <form method="post" class="form" action="{{if .Appliance.ID}}/admin/site/{{.Site.ID}}/appliances/{{.Appliance.ID}}{{else}}/admin/site/{{.Site.ID}}/appliances/create{{end}}">
         <label for="name">Name</label>
         <input type="text" id="name" name="name" value="{{.Appliance.Name}}" required>
 
@@ -64,6 +64,7 @@
     </form>
 </section>
 
+{{if .Appliance.ID}}
 <section class="card">
     <h2 class="card-title">Documents</h2>
     <form method="post" action="/admin/site/{{.Site.ID}}/appliances/{{.Appliance.ID}}/documents" enctype="multipart/form-data" class="form inline">
@@ -91,4 +92,5 @@
     <p class="empty">No documents uploaded.</p>
     {{end}}
 </section>
+{{end}}
 {{end}}
