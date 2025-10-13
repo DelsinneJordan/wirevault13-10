@@ -1,0 +1,60 @@
+{{define "admin/sites.html"}}
+{{template "base" .}}
+{{end}}
+
+{{define "admin/sites.html#content"}}
+<section class="admin-header">
+    <h1>Sites</h1>
+    <nav class="admin-nav">
+        <a href="/admin/tokens" class="nav-link">Tokens</a>
+        <a href="/admin/settings" class="nav-link">Settings</a>
+        <a href="/admin/logout" class="nav-link">Sign out</a>
+    </nav>
+</section>
+
+<section class="grid">
+    <div class="grid-column">
+        <div class="card">
+            <h2 class="card-title">Create a site</h2>
+            <form method="post" class="form">
+                <label for="address">Site address</label>
+                <input type="text" id="address" name="address" required>
+
+                <label for="short_id">Site short ID <span class="muted">(optional)</span></label>
+                <input type="text" id="short_id" name="short_id" maxlength="12">
+
+                <label for="customer_name">Customer name <span class="muted">(admin only)</span></label>
+                <input type="text" id="customer_name" name="customer_name">
+
+                <label for="notes">Notes</label>
+                <textarea id="notes" name="notes" rows="3"></textarea>
+
+                <button type="submit" class="btn btn-primary">Create site</button>
+            </form>
+            {{if .Message}}
+            <div class="alert {{if eq .MessageType "error"}}alert-error{{else if eq .MessageType "success"}}alert-success{{end}}">{{.Message}}</div>
+            {{end}}
+        </div>
+    </div>
+    <div class="grid-column">
+        <div class="card">
+            <h2 class="card-title">Existing sites</h2>
+            {{if .Sites}}
+            <ul class="item-list">
+                {{range .Sites}}
+                <li class="item">
+                    <div>
+                        <h3>{{.Address}}</h3>
+                        <p class="muted">Short ID: {{.ShortID}}</p>
+                    </div>
+                    <a class="btn btn-link" href="/admin/site/{{.ID}}">Manage</a>
+                </li>
+                {{end}}
+            </ul>
+            {{else}}
+            <p class="empty">No sites yet. Create one using the form.</p>
+            {{end}}
+        </div>
+    </div>
+</section>
+{{end}}
