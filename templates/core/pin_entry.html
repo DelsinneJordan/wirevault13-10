@@ -1,0 +1,18 @@
+{{define "core/pin_entry.html"}}
+{{template "base" .}}
+{{end}}
+
+{{define "core/pin_entry.html#content"}}
+<section class="card">
+    <h1 class="card-title">Secure document access</h1>
+    <p class="card-lead">Enter the 5-digit PIN from your QR sticker to unlock this site.</p>
+    {{if .Error}}
+    <div class="alert alert-error">{{.Error}}</div>
+    {{end}}
+    <form method="post" class="form">
+        <label for="pin">PIN</label>
+        <input type="password" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" minlength="5" name="pin" id="pin" required>
+        <button type="submit" class="btn btn-primary">View documents</button>
+    </form>
+</section>
+{{end}}
