@@ -1,0 +1,50 @@
+{{define "core/appliance_detail.html"}}
+{{template "base" .}}
+{{end}}
+
+{{define "core/appliance_detail.html#content"}}
+<nav class="breadcrumb"><a href="/site/{{.Site.ShortID}}">Back to overview</a></nav>
+<section class="card">
+    <h1 class="card-title">{{.Appliance.Name}}</h1>
+    <p class="muted">{{categoryLabel .Appliance.Category}} • {{.Appliance.Brand}} {{.Appliance.Model}}</p>
+    <div class="detail-grid">
+        <div>
+            <h2 class="section-title">Specification</h2>
+            <dl class="meta-list">
+                <div><dt>Serial number</dt><dd>{{.Appliance.SerialNumber}}</dd></div>
+                <div><dt>Voltage</dt><dd>{{.Appliance.Voltage}}</dd></div>
+                <div><dt>Power (kW)</dt><dd>{{.Appliance.PowerKW}}</dd></div>
+                <div><dt>Install date</dt><dd>{{.Appliance.InstallDate}}</dd></div>
+                {{if .Appliance.MPPTCount}}<div><dt>MPPT count</dt><dd>{{.Appliance.MPPTCount}}</dd></div>{{end}}
+                {{if .Appliance.CapacityKWh}}<div><dt>Capacity (kWh)</dt><dd>{{.Appliance.CapacityKWh}}</dd></div>{{end}}
+                {{if .Appliance.ConnectorType}}<div><dt>Connector</dt><dd>{{.Appliance.ConnectorType}}</dd></div>{{end}}
+                {{if .Appliance.Phases}}<div><dt>Phases</dt><dd>{{.Appliance.Phases}}</dd></div>{{end}}
+                {{if .Appliance.FuelType}}<div><dt>Fuel type</dt><dd>{{.Appliance.FuelType}}</dd></div>{{end}}
+            </dl>
+        </div>
+        <div>
+            <h2 class="section-title">Notes</h2>
+            <p>{{with .Appliance.Notes}}{{.}}{{else}}<span class="muted">No notes provided.</span>{{end}}</p>
+        </div>
+    </div>
+</section>
+
+<section class="card">
+    <h2 class="card-title">Documents</h2>
+    {{if .Appliance.Documents}}
+    <ul class="document-list">
+        {{range .Appliance.Documents}}
+        <li>
+            <div>
+                <strong>{{.Label}}</strong>
+                <span class="muted">Uploaded {{formatDateTime .UploadedAt}}</span>
+            </div>
+            <a class="btn btn-link" href="/documents/appliance/{{$.Appliance.ID}}/{{.ID}}">Download</a>
+        </li>
+        {{end}}
+    </ul>
+    {{else}}
+    <p class="empty">No documents yet.</p>
+    {{end}}
+</section>
+{{end}}

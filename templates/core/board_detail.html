@@ -1,0 +1,49 @@
+{{define "core/board_detail.html"}}
+{{template "base" .}}
+{{end}}
+
+{{define "core/board_detail.html#content"}}
+<nav class="breadcrumb"><a href="/site/{{.Site.ShortID}}">Back to overview</a></nav>
+<section class="card">
+    <h1 class="card-title">{{.Board.Name}}</h1>
+    <p class="muted">{{.Board.BoardType}} • {{.Board.SupplyType}}</p>
+    <div class="detail-grid">
+        <div>
+            <h2 class="section-title">Technical details</h2>
+            <dl class="meta-list">
+                <div><dt>Voltage</dt><dd>{{.Board.Voltage}}</dd></div>
+                <div><dt>Earthing system</dt><dd>{{.Board.EarthingSystem}}</dd></div>
+                <div><dt>Incoming cable</dt><dd>{{.Board.IncomingCable}}</dd></div>
+                <div><dt>Rated current</dt><dd>{{.Board.RatedCurrent}}</dd></div>
+                <div><dt>Frequency</dt><dd>{{.Board.Frequency}}</dd></div>
+                <div><dt>Solar</dt><dd>{{if .Board.Solar}}Yes{{else}}No{{end}}</dd></div>
+                <div><dt>Last inspection</dt><dd>{{.Board.LastInspection}}</dd></div>
+                <div><dt>Next inspection due</dt><dd>{{.Board.NextInspectionDue}}</dd></div>
+            </dl>
+        </div>
+        <div>
+            <h2 class="section-title">Description</h2>
+            <p>{{with .Board.Description}}{{.}}{{else}}<span class="muted">No description provided.</span>{{end}}</p>
+        </div>
+    </div>
+</section>
+
+<section class="card">
+    <h2 class="card-title">Documents</h2>
+    {{if .Board.Documents}}
+    <ul class="document-list">
+        {{range .Board.Documents}}
+        <li>
+            <div>
+                <strong>{{.Label}}</strong>
+                <span class="muted">Uploaded {{formatDateTime .UploadedAt}}</span>
+            </div>
+            <a class="btn btn-link" href="/documents/board/{{$.Board.ID}}/{{.ID}}">Download</a>
+        </li>
+        {{end}}
+    </ul>
+    {{else}}
+    <p class="empty">No documents yet.</p>
+    {{end}}
+</section>
+{{end}}
