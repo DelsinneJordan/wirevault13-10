@@ -1,0 +1,25 @@
+# Git & CI
+.git
+.gitignore
+.github
+
+# Local artifacts
+*.log
+*.tmp
+*.swp
+*.local
+*.DS_Store
+
+# Build caches
+bin
+vendor
+
+# Runtime state (mounted as volumes in production)
+data
+media
+
+# Python tooling
+__pycache__/
+
+# Misc
+node_modules

@@ -1,0 +1,20 @@
+{{define "admin/login.html"}}
+{{template "base" .}}
+{{end}}
+
+{{define "admin/login.html#content"}}
+<section class="auth">
+    <div class="card narrow">
+        <h1 class="card-title">Admin sign-in</h1>
+        <p class="card-lead">Enter the admin password to manage sites, tokens, and assets.</p>
+        {{if .Error}}
+        <div class="alert alert-error">{{.Error}}</div>
+        {{end}}
+        <form method="post" class="form">
+            <label for="password">Password</label>
+            <input type="password" name="password" id="password" required autofocus>
+            <button type="submit" class="btn btn-primary">Sign in</button>
+        </form>
+    </div>
+</section>
+{{end}}

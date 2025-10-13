@@ -1,0 +1,82 @@
+{{define "admin/token_list.html"}}
+{{template "base" .}}
+{{end}}
+
+{{define "admin/token_list.html#content"}}
+<section class="admin-header">
+    <h1>QR tokens</h1>
+    <nav class="admin-nav">
+        <a href="/admin/sites" class="nav-link">Sites</a>
+        <a href="/admin/settings" class="nav-link">Settings</a>
+        <a href="/admin/logout" class="nav-link">Sign out</a>
+    </nav>
+</section>
+
+<section class="card">
+    <div class="card-header">
+        <div>
+            <a class="btn btn-secondary" href="/admin/tokens/generate">Generate tokens</a>
+            <a class="btn btn-link" href="/admin/tokens/export?format=csv">Export CSV</a>
+            <a class="btn btn-link" href="/admin/tokens/export?format=xlsx">Export XLSX</a>
+        </div>
+    </div>
+    {{if .Message}}
+    <div class="alert {{if eq .MessageType "error"}}alert-error{{else if eq .MessageType "success"}}alert-success{{end}}">{{.Message}}</div>
+    {{end}}
+    {{if .Tokens}}
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Short ID</th>
+                    <th>PIN</th>
+                    <th>Status</th>
+                    <th>Site</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Tokens}}
+                <tr>
+                    <td>
+                        <form method="post" class="mini-form">
+                            <input type="hidden" name="action" value="update">
+                            <input type="hidden" name="token_id" value="{{.ID}}">
+                            <input type="text" name="short_id" value="{{.ShortID}}" maxlength="12">
+                    </td>
+                    <td>
+                            <input type="text" name="pin" value="{{.PIN}}" pattern="[0-9]{5}" maxlength="5" minlength="5">
+                    </td>
+                    <td>
+                            <select name="status">
+                                <option value="UNASSIGNED" {{if eq .Status "UNASSIGNED"}}selected{{end}}>Unassigned</option>
+                                <option value="ASSIGNED" {{if eq .Status "ASSIGNED"}}selected{{end}}>Assigned</option>
+                                <option value="RETIRED" {{if eq .Status "RETIRED"}}selected{{end}}>Retired</option>
+                            </select>
+                    </td>
+                    <td>
+                        {{with index $.SiteLookup .SiteID}}
+                            {{.}}
+                        {{else}}
+                            <span class="muted">Not assigned</span>
+                        {{end}}
+                    </td>
+                    <td class="actions">
+                            <button type="submit" class="btn btn-secondary">Update</button>
+                        </form>
+                        <form method="post" class="mini-form" action="" onsubmit="return confirm('Delete this token?');">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="token_id" value="{{.ID}}">
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+    {{else}}
+    <p class="empty">No tokens yet. Generate a batch to get started.</p>
+    {{end}}
+</section>
+{{end}}
