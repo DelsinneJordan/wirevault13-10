@@ -6,15 +6,26 @@
 <section class="auth">
     <div class="card narrow">
         <h1 class="card-title">Admin sign-in</h1>
-        <p class="card-lead">Enter the admin password to manage sites, tokens, and assets.</p>
+        <p class="card-lead">Sign in with your WireVault administrator credentials.</p>
+        {{if .Message}}
+        <div class="alert {{if eq .MessageType "success"}}alert-success{{else if eq .MessageType "error"}}alert-error{{else}}alert-info{{end}}">{{.Message}}</div>
+        {{end}}
         {{if .Error}}
         <div class="alert alert-error">{{.Error}}</div>
         {{end}}
         <form method="post" class="form">
+            <label for="identifier">Username or email</label>
+            <input type="text" name="identifier" id="identifier" value="{{.Identifier}}" autocomplete="username" required autofocus>
             <label for="password">Password</label>
-            <input type="password" name="password" id="password" required autofocus>
+            <input type="password" name="password" id="password" autocomplete="current-password" required>
             <button type="submit" class="btn btn-primary">Sign in</button>
         </form>
+        {{if .SSOEnabled}}
+        <div class="divider"><span>or</span></div>
+        <form method="get" action="/admin/login/sso" class="form">
+            <button type="submit" class="btn btn-secondary">Sign in with SSO</button>
+        </form>
+        {{end}}
     </div>
 </section>
 {{end}}

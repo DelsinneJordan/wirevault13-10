@@ -14,7 +14,7 @@ WireVault is a lightweight Go web application that delivers secure, phone-friend
 - **Boards & appliances**: Capture detailed technical metadata and attach documents for every asset.
 - **QR tokens**: Batch-generate tokens, edit short IDs or PINs, assign/unassign/retire tokens, and export CSV/XLSX files for sticker production.
 - **Document uploads**: Drag-and-drop friendly forms accept PDFs or images; delete outdated files when needed.
-- **Simple authentication**: Password-protected admin area with configurable password.
+- **Role-based authentication**: Named administrator accounts with owner/admin roles, password management, and optional SAML SSO.
 
 ## Technology
 - **Language**: Go 1.24 (standard library only).

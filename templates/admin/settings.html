@@ -12,34 +12,178 @@
     </nav>
 </section>
 
+<div class="card">
+    <nav class="tab-nav">
+        <a href="/admin/settings?tab=users" class="tab-link {{if eq .ActiveTab "users"}}is-active{{end}}">Users</a>
+        <a href="/admin/settings?tab=security" class="tab-link {{if eq .ActiveTab "security"}}is-active{{end}}">Security</a>
+        <a href="/admin/settings?tab=sso" class="tab-link {{if eq .ActiveTab "sso"}}is-active{{end}}">SSO</a>
+    </nav>
+    {{if .Message}}
+    <div class="alert {{if eq .MessageType "success"}}alert-success{{else if eq .MessageType "error"}}alert-error{{else}}alert-info{{end}}">{{.Message}}</div>
+    {{end}}
+    {{if .Error}}
+    <div class="alert alert-error">{{.Error}}</div>
+    {{end}}
+</div>
+
+{{if eq .ActiveTab "users"}}
+<section class="grid">
+    <div class="grid-column">
+        <div class="card">
+            <h2 class="card-title">Create user</h2>
+            <p class="muted">Add a new administrator. Passwords must be at least 8 characters.</p>
+            <form method="post" class="form">
+                <input type="hidden" name="intent" value="create_user">
+                <input type="hidden" name="tab" value="users">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" value="{{index .FormValues "username"}}" required autocomplete="off">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" value="{{index .FormValues "email"}}" autocomplete="off">
+                {{if eq .CurrentUser.Role "OWNER"}}
+                <label for="role">Role</label>
+                <select id="role" name="role">
+                    <option value="ADMIN" {{if eq (index .FormValues "role") "ADMIN"}}selected{{end}}>Admin</option>
+                    <option value="OWNER" {{if eq (index .FormValues "role") "OWNER"}}selected{{end}}>Owner</option>
+                </select>
+                {{else}}
+                <input type="hidden" name="role" value="ADMIN">
+                {{end}}
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" minlength="8" required autocomplete="new-password">
+                <label for="confirm_password">Confirm password</label>
+                <input type="password" id="confirm_password" name="confirm_password" minlength="8" required autocomplete="new-password">
+                <button type="submit" class="btn btn-primary">Create user</button>
+            </form>
+        </div>
+    </div>
+    <div class="grid-column">
+        <div class="card">
+            <h2 class="card-title">Existing users</h2>
+            {{if not .Users}}
+            <p class="muted">No users available.</p>
+            {{else}}
+            <div class="stack">
+                {{range .Users}}
+                {{ $canManage := or (eq $.CurrentUser.Role "OWNER") (eq .CreatedBy $.CurrentUser.ID) (eq .ID $.CurrentUser.ID) }}
+                {{ $canEditRole := and (eq $.CurrentUser.Role "OWNER") (ne .ID $.CurrentUser.ID) }}
+                {{ $isLastOwner := and (eq .Role "OWNER") (eq $.OwnerCount 1) }}
+                <div class="panel">
+                    <header class="panel-header">
+                        <div>
+                            <h3>{{.Username}}</h3>
+                            <p class="muted">{{if .Email}}{{.Email}}{{else}}<span class="muted">No email</span>{{end}}</p>
+                        </div>
+                        <span class="role-pill">{{.Role}}</span>
+                    </header>
+                    <p class="muted">Created by {{index $.CreatorNames .CreatedBy}}</p>
+                    <form method="post" class="form" style="margin-top:1rem;">
+                        <input type="hidden" name="intent" value="update_user">
+                        <input type="hidden" name="tab" value="users">
+                        <input type="hidden" name="user_id" value="{{.ID}}">
+                        <label>Username</label>
+                        <input type="text" name="username" value="{{.Username}}" {{if not $canManage}}readonly{{end}}>
+                        <label>Email</label>
+                        <input type="email" name="email" value="{{.Email}}" {{if not $canManage}}readonly{{end}}>
+                        <label>Role</label>
+                        <select name="role" {{if not $canEditRole}}disabled{{end}}>
+                            <option value="ADMIN" {{if eq .Role "ADMIN"}}selected{{end}}>Admin</option>
+                            <option value="OWNER" {{if eq .Role "OWNER"}}selected{{end}}>Owner</option>
+                        </select>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-secondary" {{if not $canManage}}disabled{{end}}>Save changes</button>
+                        </div>
+                    </form>
+                    <form method="post" class="delete-form" onsubmit="return confirm('Delete this user?');">
+                        <input type="hidden" name="intent" value="delete_user">
+                        <input type="hidden" name="tab" value="users">
+                        <input type="hidden" name="user_id" value="{{.ID}}">
+                        <button type="submit" class="btn btn-link danger" {{if or (not $canManage) $isLastOwner}}disabled{{end}}>Delete</button>
+                    </form>
+                </div>
+                {{end}}
+            </div>
+            {{end}}
+        </div>
+    </div>
+</section>
+{{end}}
+
+{{if eq .ActiveTab "security"}}
 <section class="grid">
     <div class="grid-column">
         <div class="card">
             <h2 class="card-title">Public base URL</h2>
             <p class="muted">Used when generating QR links for sticker printing.</p>
             <form method="post" class="form">
+                <input type="hidden" name="intent" value="update_public_url">
+                <input type="hidden" name="tab" value="security">
                 <label for="public_url">Base URL</label>
-                <input type="url" id="public_url" name="public_url" value="{{.PublicBaseURL}}" placeholder="https://example.com">
+                <input type="url" id="public_url" name="public_url" value="{{.PublicBaseURL}}" placeholder="https://example.com" {{if ne .CurrentUser.Role "OWNER"}}readonly{{end}}>
+                {{if eq .CurrentUser.Role "OWNER"}}
                 <button type="submit" class="btn btn-primary">Update</button>
+                {{else}}
+                <p class="muted">Only owners can update the base URL.</p>
+                {{end}}
             </form>
-            {{if .Message}}
-            <div class="alert {{if eq .MessageType "error"}}alert-error{{else if eq .MessageType "success"}}alert-success{{end}}">{{.Message}}</div>
-            {{end}}
-            {{if .Error}}
-            <div class="alert alert-error">{{.Error}}</div>
-            {{end}}
         </div>
     </div>
     <div class="grid-column">
         <div class="card">
-            <h2 class="card-title">Admin password</h2>
-            <p class="muted">Set a new password to protect the admin area.</p>
+            <h2 class="card-title">Change password</h2>
+            <p class="muted">Update your password for password-based login. SSO users can optionally set a fallback password.</p>
             <form method="post" class="form">
+                <input type="hidden" name="intent" value="change_password">
+                <input type="hidden" name="tab" value="security">
+                <label for="current_password">Current password</label>
+                <input type="password" id="current_password" name="current_password" autocomplete="current-password">
                 <label for="new_password">New password</label>
-                <input type="password" id="new_password" name="new_password" minlength="6">
+                <input type="password" id="new_password" name="new_password" minlength="8" required autocomplete="new-password">
+                <label for="confirm_password">Confirm password</label>
+                <input type="password" id="confirm_password" name="confirm_password" minlength="8" required autocomplete="new-password">
                 <button type="submit" class="btn btn-secondary">Change password</button>
             </form>
         </div>
     </div>
 </section>
+{{end}}
+
+{{if eq .ActiveTab "sso"}}
+<section class="grid">
+    <div class="grid-column full">
+        <div class="card">
+            <h2 class="card-title">SAML 2.0 configuration</h2>
+            <p class="muted">Enable single sign-on for administrators. Provide the service provider and identity provider details below.</p>
+            <form method="post" class="form">
+                <input type="hidden" name="intent" value="update_saml">
+                <input type="hidden" name="tab" value="sso">
+                <label class="checkbox">
+                    <input type="checkbox" name="enabled" value="1" {{if .SAML.Enabled}}checked{{end}}>
+                    <span>Enable SAML single sign-on</span>
+                </label>
+                <label class="checkbox">
+                    <input type="checkbox" name="allow_idp_initiated" value="1" {{if .SAML.AllowIDPInitiated}}checked{{end}}>
+                    <span>Allow IdP-initiated logins</span>
+                </label>
+                <label for="sp_base_url">Service provider base URL</label>
+                <input type="url" id="sp_base_url" name="sp_base_url" value="{{.SAML.SPBaseURL}}" placeholder="https://admin.example.com">
+                <label for="sp_entity_id">Service provider entity ID</label>
+                <input type="text" id="sp_entity_id" name="sp_entity_id" value="{{.SAML.SPEntityID}}" placeholder="urn:wirevault:sp">
+                <label for="sp_key">Service provider private key (PEM)</label>
+                <textarea id="sp_key" name="sp_key" rows="6" placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----">{{.SAML.SPKeyPEM}}</textarea>
+                <label for="sp_certificate">Service provider certificate (PEM)</label>
+                <textarea id="sp_certificate" name="sp_certificate" rows="6" placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----">{{.SAML.SPCertificatePEM}}</textarea>
+                <label for="idp_metadata_url">IdP metadata URL</label>
+                <input type="url" id="idp_metadata_url" name="idp_metadata_url" value="{{.SAML.IDPMetadataURL}}" placeholder="https://idp.example.com/metadata">
+                <label for="idp_metadata_xml">IdP metadata XML (optional)</label>
+                <textarea id="idp_metadata_xml" name="idp_metadata_xml" rows="6" placeholder="Paste the raw XML here">{{.SAML.IDPMetadataXML}}</textarea>
+                <label for="email_attribute">Email attribute</label>
+                <input type="text" id="email_attribute" name="email_attribute" value="{{.SAML.EmailAttribute}}" placeholder="email">
+                <label for="username_attribute">Username attribute</label>
+                <input type="text" id="username_attribute" name="username_attribute" value="{{.SAML.UsernameAttribute}}" placeholder="username">
+                <button type="submit" class="btn btn-secondary">Save SSO settings</button>
+            </form>
+        </div>
+    </div>
+</section>
+{{end}}
 {{end}}
