@@ -1,5 +1,4 @@
 # syntax=docker/dockerfile:1
-templates
 FROM golang:1.22 AS builder
 WORKDIR /app
 
