@@ -1,0 +1,138 @@
+{
+  "sites": [
+    {
+      "id": "47a5d2aa4907fcc0380436ad1c35d42e",
+      "shortId": "JERUZA",
+      "address": "jeruzalemstraat 6 - 9450 Haaltert",
+      "customerName": "jdelsinne",
+      "notes": "test",
+      "boards": [
+        {
+          "id": "37fd3a635834fd6aa3f4eab6eeb48bba",
+          "shortId": "",
+          "name": "Bord 1",
+          "boardType": "",
+          "supplyType": "",
+          "voltage": "",
+          "earthingSystem": "",
+          "incomingCable": "",
+          "ratedCurrent": "",
+          "frequency": "",
+          "solar": false,
+          "description": "",
+          "lastInspection": "",
+          "nextInspectionDue": "",
+          "documents": [],
+          "createdAt": "2025-10-14T14:36:25.6518231+02:00",
+          "updatedAt": "2025-10-14T14:36:25.6518231+02:00"
+        }
+      ],
+      "appliances": [],
+      "createdAt": "2025-10-14T00:54:46.4152225+02:00",
+      "updatedAt": "2025-10-14T14:36:25.6518231+02:00"
+    },
+    {
+      "id": "e0203be78ab445d967f151dd2d692dd4",
+      "shortId": "BERTEN",
+      "address": "Berten Fermont Plein 11, 2140 Antwerpen, Belgium",
+      "customerName": "test test",
+      "notes": "test",
+      "boards": [
+        {
+          "id": "5e3c4b3a75baa866333e0340ed8c9672",
+          "shortId": "",
+          "name": "username",
+          "boardType": "",
+          "supplyType": "",
+          "voltage": "",
+          "earthingSystem": "",
+          "incomingCable": "",
+          "ratedCurrent": "",
+          "frequency": "",
+          "solar": false,
+          "description": "",
+          "lastInspection": "",
+          "nextInspectionDue": "",
+          "documents": [],
+          "createdAt": "2025-10-14T01:24:06.3300584+02:00",
+          "updatedAt": "2025-10-14T01:24:06.3300584+02:00"
+        }
+      ],
+      "appliances": [
+        {
+          "id": "e7088be6cdb0c91e06cc8d74efe50fdc",
+          "category": "Heat Pump",
+          "name": "Goodwe k10",
+          "brand": "Tesla",
+          "model": "Powerwall",
+          "serialNumber": "",
+          "voltage": "",
+          "powerKw": "",
+          "installDate": "",
+          "notes": "",
+          "mpptCount": "",
+          "capacityKwh": "",
+          "connectorType": "",
+          "phases": "",
+          "fuelType": "",
+          "documents": [],
+          "createdAt": "2025-10-14T01:24:23.1195019+02:00",
+          "updatedAt": "2025-10-14T01:24:23.1195019+02:00"
+        }
+      ],
+      "createdAt": "2025-10-14T01:13:12.4790359+02:00",
+      "updatedAt": "2025-10-14T01:24:23.1195019+02:00"
+    }
+  ],
+  "tokens": [
+    {
+      "id": "80c4cd913b3c64130e43230ddfa73dcb",
+      "shortId": "QBEEVM",
+      "pin": "25279",
+      "status": "ASSIGNED",
+      "siteId": "47a5d2aa4907fcc0380436ad1c35d42e",
+      "createdAt": "2025-10-14T00:55:04.9354409+02:00",
+      "updatedAt": "2025-10-14T00:56:28.0527808+02:00"
+    },
+    {
+      "id": "9c2428c045dbe56e1860b00c17863694",
+      "shortId": "VLWJ5A",
+      "pin": "61187",
+      "status": "ASSIGNED",
+      "siteId": "",
+      "createdAt": "2025-10-14T00:55:04.9354409+02:00",
+      "updatedAt": "2025-10-14T01:26:06.5855753+02:00"
+    },
+    {
+      "id": "e2c85c7c152be826c37e116fbc5a3586",
+      "shortId": "GVN2QA",
+      "pin": "14351",
+      "status": "ASSIGNED",
+      "siteId": "47a5d2aa4907fcc0380436ad1c35d42e",
+      "createdAt": "2025-10-14T00:55:04.9354409+02:00",
+      "updatedAt": "2025-10-14T00:56:32.411751+02:00"
+    },
+    {
+      "id": "ea7ef07b0ba02ad325283b2a1ade9cec",
+      "shortId": "AQZW9S",
+      "pin": "93699",
+      "status": "UNASSIGNED",
+      "siteId": "",
+      "createdAt": "2025-10-14T00:55:04.9354409+02:00",
+      "updatedAt": "2025-10-14T00:55:04.9354409+02:00"
+    },
+    {
+      "id": "0419c32c64fc77f59156634dd415ed31",
+      "shortId": "363T8P",
+      "pin": "80211",
+      "status": "UNASSIGNED",
+      "siteId": "",
+      "createdAt": "2025-10-14T00:55:04.9354409+02:00",
+      "updatedAt": "2025-10-14T00:55:04.9354409+02:00"
+    }
+  ],
+  "config": {
+    "adminPasswordHash": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918",
+    "publicBaseUrl": "https://wirevault.example.com"
+  }
+}
