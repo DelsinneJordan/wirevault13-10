@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  wirevault:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      # WireVault listens on this address/port
+      - ADDR=:8080
+    expose:
+      - "8080"                 # expose to Traefik only (no host port binding)
+    volumes:
+      - wirevault_data:/app/data
+      - wirevault_media:/app/media
+    restart: unless-stopped
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      # Set DOMAIN in Dokploy Env (e.g., wirevault.yourdomain.com)
+      - "traefik.http.routers.wirevault.rule=Host(`${DOMAIN}`)"
+      # Use HTTP entrypoint; Dokploy can add HTTPS via its Domains UI
+      - "traefik.http.routers.wirevault.entrypoints=web"
+      # Tell Traefik which internal port to hit
+      - "traefik.http.services.wirevault.loadbalancer.server.port=8080"
+      # Some setups need this to force the correct network
+      - "traefik.docker.network=dokploy-network"
+
+volumes:
+  wirevault_data:
+  wirevault_media:
+
+networks:
+  dokploy-network:
+    external: true
