@@ -1,0 +1,11 @@
+{{define "core/session_expired.html"}}
+{{template "base" .}}
+{{end}}
+
+{{define "core/session_expired.html#content"}}
+<section class="card">
+    <h1 class="card-title">Session expired</h1>
+    <p class="card-lead">For your security, sessions automatically expire after a short period of inactivity.</p>
+    <a class="btn btn-primary" href="{{.TokenURL}}">Re-enter PIN</a>
+</section>
+{{end}}

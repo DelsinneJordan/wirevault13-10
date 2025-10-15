@@ -1,0 +1,59 @@
+{{define "core/site_overview.html"}}
+{{template "base" .}}
+{{end}}
+
+{{define "core/site_overview.html#content"}}
+<section class="hero">
+    <p class="eyebrow">Site address</p>
+    <h1>{{.Site.Address}}</h1>
+    <p class="muted">Documents and technical details for this location.</p>
+</section>
+
+<section class="grid">
+    <div class="grid-column">
+        <div class="card">
+            <h2 class="card-title">Boards</h2>
+            {{if .Boards}}
+            <ul class="item-list">
+                {{range .Boards}}
+                <li class="item">
+                    <div>
+                        <h3>{{.Name}}</h3>
+                        <p class="muted">{{.BoardType}} • {{.SupplyType}}</p>
+                    </div>
+                    <a class="btn btn-link" href="/site/{{$.Site.ShortID}}/boards/{{.ID}}">Open</a>
+                </li>
+                {{end}}
+            </ul>
+            {{else}}
+            <p class="empty">No boards yet.</p>
+            {{end}}
+        </div>
+    </div>
+    <div class="grid-column">
+        <div class="card">
+            <h2 class="card-title">Appliances</h2>
+            {{range .ApplianceGroups}}
+                <div class="group">
+                    <h3>{{categoryLabel .Category}}</h3>
+                    {{if .Items}}
+                    <ul class="item-list">
+                        {{range .Items}}
+                        <li class="item">
+                            <div>
+                                <h4>{{.Name}}</h4>
+                                <p class="muted">{{.Brand}} {{.Model}}</p>
+                            </div>
+                            <a class="btn btn-link" href="/site/{{$.Site.ShortID}}/appliances/{{.ID}}">Open</a>
+                        </li>
+                        {{end}}
+                    </ul>
+                    {{else}}
+                    <p class="empty">No items yet.</p>
+                    {{end}}
+                </div>
+            {{end}}
+        </div>
+    </div>
+</section>
+{{end}}

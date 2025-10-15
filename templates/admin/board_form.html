@@ -1,0 +1,90 @@
+{{define "admin/board_form.html"}}
+{{template "base" .}}
+{{end}}
+
+{{define "admin/board_form.html#content"}}
+<section class="admin-header">
+    <h1>{{if .Board.ID}}Edit board{{else}}Add board{{end}}</h1>
+    <nav class="admin-nav">
+        <a href="/admin/site/{{.Site.ID}}" class="nav-link">Back to site</a>
+        <a href="/admin/logout" class="nav-link">Sign out</a>
+    </nav>
+</section>
+
+<section class="card">
+    <h2 class="card-title">Board details</h2>
+    <form method="post" class="form" action="{{if .Board.ID}}/admin/site/{{.Site.ID}}/boards/{{.Board.ID}}{{else}}/admin/site/{{.Site.ID}}/boards/create{{end}}">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" value="{{.Board.Name}}" required>
+
+        <label for="short_id">Short ID</label>
+        <input type="text" id="short_id" name="short_id" value="{{.Board.ShortID}}">
+
+        <label for="board_type">Board type</label>
+        <input type="text" id="board_type" name="board_type" value="{{.Board.BoardType}}">
+
+        <label for="supply_type">Supply type</label>
+        <input type="text" id="supply_type" name="supply_type" value="{{.Board.SupplyType}}">
+
+        <label for="voltage">Voltage</label>
+        <input type="text" id="voltage" name="voltage" value="{{.Board.Voltage}}">
+
+        <label for="earthing_system">Earthing system</label>
+        <input type="text" id="earthing_system" name="earthing_system" value="{{.Board.EarthingSystem}}">
+
+        <label for="incoming_cable">Incoming cable</label>
+        <input type="text" id="incoming_cable" name="incoming_cable" value="{{.Board.IncomingCable}}">
+
+        <label for="rated_current">Rated current</label>
+        <input type="text" id="rated_current" name="rated_current" value="{{.Board.RatedCurrent}}">
+
+        <label for="frequency">Frequency</label>
+        <input type="text" id="frequency" name="frequency" value="{{.Board.Frequency}}">
+
+        <label class="checkbox">
+            <input type="checkbox" name="solar" {{if .Board.Solar}}checked{{end}}> Solar enabled
+        </label>
+
+        <label for="last_inspection">Last inspection date</label>
+        <input type="text" id="last_inspection" name="last_inspection" value="{{.Board.LastInspection}}" placeholder="YYYY-MM-DD">
+
+        <label for="next_inspection">Next inspection due</label>
+        <input type="text" id="next_inspection" name="next_inspection" value="{{.Board.NextInspectionDue}}" placeholder="YYYY-MM-DD">
+
+        <label for="description">Description</label>
+        <textarea id="description" name="description" rows="4">{{.Board.Description}}</textarea>
+
+        <button type="submit" class="btn btn-primary">Save board</button>
+    </form>
+</section>
+
+{{if .Board.ID}}
+<section class="card">
+    <h2 class="card-title">Documents</h2>
+    <form method="post" action="/admin/site/{{.Site.ID}}/boards/{{.Board.ID}}/documents" enctype="multipart/form-data" class="form inline">
+        <label for="label">Label</label>
+        <input type="text" id="label" name="label" placeholder="Document name">
+        <label for="document">File</label>
+        <input type="file" id="document" name="document" accept="application/pdf,image/*">
+        <button type="submit" class="btn btn-secondary">Upload</button>
+    </form>
+    {{if .Board.Documents}}
+    <ul class="document-list">
+        {{range .Board.Documents}}
+        <li>
+            <div>
+                <strong>{{.Label}}</strong>
+                <span class="muted">{{.FileName}}</span>
+            </div>
+            <form method="post" action="/admin/site/{{$.Site.ID}}/boards/{{$.Board.ID}}/documents/{{.ID}}/delete" onsubmit="return confirm('Delete this document?');">
+                <button type="submit" class="btn btn-danger">Delete</button>
+            </form>
+        </li>
+        {{end}}
+    </ul>
+    {{else}}
+    <p class="empty">No documents uploaded.</p>
+    {{end}}
+</section>
+{{end}}
+{{end}}
