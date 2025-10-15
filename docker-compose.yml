@@ -3,10 +3,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    # Set this in Dokploy → Compose Env (e.g., wirevault.up2charge.be)
     environment:
-      - ADDR=:8080
-      # Set this in Dokploy → Compose Env (e.g., wirevault.up2charge.be)
       - DOMAIN=wirevault.up2charge.com
+    command: ["-addr", ":8080"]
     expose:
       - "8080"   # no host port; Traefik will route internally
     volumes:

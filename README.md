@@ -64,9 +64,9 @@ gofmt -w main.go core/**/*.go
 The repository includes a production-ready container definition (`Dockerfile`) and a Dokploy manifest (`deploy/dokploy.yaml`). You can either import the manifest directly in Dokploy or reproduce the steps manually through the UI:
 
 1. **Create a project:** Import this Git repository in Dokploy and choose *Dockerfile* as the deployment method. Point the build context to the repo root and the Dockerfile to `Dockerfile`.
-2. **Expose the web service:** Keep the default HTTP port at `8080`. Dokploy will proxy it through Traefik so you only need to map the internal port.
-3. **Persist application data:** Add two Docker volumes and mount them to `/app/data` and `/app/media`. These hold the JSON datastore and uploaded documents respectively.
-4. **Configure environment variables:** Set `ADDR` to `:8080` (or whichever internal port you prefer). After the first deployment, sign in with the default admin password (`admin`) and update it from *Settings*.
+2. **Start command:** Set the start command to `/app/wirevault -addr :8080` (adjust the port if you expose a different internal port).
+3. **Expose the web service:** Keep the default HTTP port at `8080`. Dokploy will proxy it through Traefik so you only need to map the internal port.
+4. **Persist application data:** Add two Docker volumes and mount them to `/app/data` and `/app/media`. These hold the JSON datastore and uploaded documents respectively.
 5. **Health check:** Point Dokploy's health check to `GET /` with a 30-second interval; the route responds with the PIN entry page when healthy.
 6. **Deploy:** Trigger a build. Dokploy will compile the Go binary in the first stage, produce the runtime image, and start the container.
 
