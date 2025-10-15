@@ -6,7 +6,7 @@ services:
     environment:
       - ADDR=:8080
       # Set this in Dokploy → Compose Env (e.g., wirevault.up2charge.be)
-      - DOMAIN=${DOMAIN}
+      - DOMAIN=wirevault.up2charge.com
     expose:
       - "8080"   # no host port; Traefik will route internally
     volumes:
@@ -18,7 +18,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=dokploy-network"
-      - "traefik.http.routers.wirevault.rule=Host(`${wirevault.up2charge.com}`)"
+      - "traefik.http.routers.wirevault.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.wirevault.entrypoints=web"
       - "traefik.http.services.wirevault.loadbalancer.server.port=8080"
 
