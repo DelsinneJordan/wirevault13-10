@@ -47,7 +47,21 @@
                         <h3>{{.Address}}</h3>
                         <p class="muted">Short ID: {{.ShortID}}</p>
                     </div>
-                    <a class="btn btn-link" href="/admin/site/{{.ID}}">Manage</a>
+                    {{ $site := . }}
+                    <div class="item-controls">
+                        <a class="btn btn-link" href="/admin/site/{{$site.ID}}">Manage</a>
+                        {{with index $.SiteTokens $site.ID}}
+                        <form class="token-access-form">
+                            <label for="token-select-{{$site.ID}}">Open customer page</label>
+                            <select id="token-select-{{$site.ID}}" name="token_short_id">
+                                {{range .}}
+                                <option value="{{.ShortID}}">{{.ShortID}} — PIN {{.PIN}}</option>
+                                {{end}}
+                            </select>
+                            <button type="button" class="btn btn-secondary" onclick="var select=this.form.token_short_id; if(select && select.value){ window.location.href='/access/'+select.value; }">View access page</button>
+                        </form>
+                        {{end}}
+                    </div>
                 </li>
                 {{end}}
             </ul>

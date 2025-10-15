@@ -512,6 +512,14 @@ func (h *Handler) handleAdminSites(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) renderSiteList(w http.ResponseWriter, r *http.Request, message, messageType string) {
 	sites := h.Store.ListSites()
+	tokens := h.Store.ListTokens()
+	siteTokens := make(map[string][]*models.QRToken)
+	for _, token := range tokens {
+		if token.SiteID == "" || token.Status != models.TokenAssigned {
+			continue
+		}
+		siteTokens[token.SiteID] = append(siteTokens[token.SiteID], token)
+	}
 	sort.Slice(sites, func(i, j int) bool {
 		return strings.ToLower(sites[i].Address) < strings.ToLower(sites[j].Address)
 	})
@@ -519,6 +527,7 @@ func (h *Handler) renderSiteList(w http.ResponseWriter, r *http.Request, message
 		"Title":       "WireVault Admin · Sites",
 		"BodyClass":   "admin dashboard",
 		"Sites":       sites,
+		"SiteTokens":  siteTokens,
 		"Message":     message,
 		"MessageType": messageType,
 	})

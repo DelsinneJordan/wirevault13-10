@@ -108,10 +108,13 @@
                         <strong>{{.ShortID}}</strong>
                         <p class="muted">PIN {{.PIN}}</p>
                     </div>
-                    <form method="post" action="/admin/site/{{$.Site.ID}}/tokens/remove">
-                        <input type="hidden" name="token_id" value="{{.ID}}">
-                        <button type="submit" class="btn btn-danger">Unassign</button>
-                    </form>
+                    <div class="token-actions">
+                        <form method="post" action="/admin/site/{{$.Site.ID}}/tokens/remove">
+                            <input type="hidden" name="token_id" value="{{.ID}}">
+                            <button type="submit" class="btn btn-danger">Unassign</button>
+                        </form>
+                        <a class="btn btn-secondary" href="/access/{{.ShortID}}">View access page</a>
+                    </div>
                 </li>
                 {{end}}
             </ul>
