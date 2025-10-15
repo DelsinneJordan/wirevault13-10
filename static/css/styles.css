@@ -109,7 +109,7 @@ body::after {
     width: 42px;
     height: 42px;
     border-radius: 14px;
-    background: url('/static/favicon.svg') center/contain no-repeat;
+    background: url('/static/favicon.png') center/contain no-repeat;
     box-shadow: 0 12px 24px rgba(245, 180, 0, 0.35);
     filter: drop-shadow(0 0 12px rgba(245, 180, 0, 0.3));
 }
