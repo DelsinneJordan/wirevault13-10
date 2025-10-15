@@ -13,6 +13,7 @@ WireVault is a lightweight Go web application that delivers secure, phone-friend
 - **Site management**: Create sites, edit public/admin-only details, and configure short IDs for URLs.
 - **Boards & appliances**: Capture detailed technical metadata and attach documents for every asset.
 - **QR tokens**: Batch-generate tokens, edit short IDs or PINs, assign/unassign/retire tokens, and export CSV/XLSX files for sticker production.
+- **Customer access shortcuts**: Jump directly to the customer-facing site page from the site list or detail view by selecting an assigned token.
 - **Document uploads**: Drag-and-drop friendly forms accept PDFs or images; delete outdated files when needed.
 - **Role-based authentication**: Named administrator accounts with owner/admin roles, password management, and optional SAML SSO.
 
@@ -55,6 +56,7 @@ gofmt -w main.go core/**/*.go
 ## Notes
 - The admin password defaults to `admin`. Update it immediately from **Settings** in production.
 - CSV/XLSX exports include token short IDs, PINs, site short IDs, and fully qualified QR URLs.
+- The admin site list surfaces a token selector that links straight to `/access/{tokenShortId}` for quick verification of customer pages.
 - Uploaded media is stored on disk; ensure the `media/` directory is writable in deployment environments.
 
 ## Deploying with Dokploy

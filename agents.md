@@ -77,6 +77,8 @@ Create/Edit: site shortId, address (public), plus customer name + notes (admin-o
 
 Change the site shortId safely (downstream links/exports should reflect the new value).
 
+Site list entries expose assigned-token shortcuts: keep the "Open customer page" selector and button that navigate to `/access/{tokenShortId}` for a quick public-page check.
+
 Boards
 
 Create/Edit: board shortId, name, and fields:
@@ -118,6 +120,8 @@ Batch-generate tokens (random tokenShortId and 5-digit PIN, plaintext).
 Mark tokens UNASSIGNED, ASSIGNED, or RETIRED.
 
 Assign/Unassign tokens to Sites (many tokens per Site).
+
+Site detail views show a "View access page" button beneath each assigned token alongside the Unassign control.
 
 Edit token PIN and tokenShortId at any time.
 
