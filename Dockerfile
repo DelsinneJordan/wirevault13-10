@@ -24,24 +24,9 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user first so we can set ownership properly
-RUN useradd -r -u 10001 appuser
-
-WORKDIR /app
-
-# Create data dirs and set ownership
-RUN mkdir -p /app/data /app/media \
- && chown -R appuser:appuser /app
-
-# Copy the binary with correct ownership
-COPY --chown=10001:10001 --from=builder /app/wwirevault /app/wirevault
-
-USER appuser
-
-EXPOSE 8080
-ENV ADDR=:8080
-
-ENTRYPOINT ["/app/wirevault"]
+WORKDIR ./app
+# Folders for persisted data
+RUN mkdir -p /app/data /app/media
 
 # Copy binary
 COPY --from=builder /app/wirevault /app/wirevault
