@@ -9,7 +9,7 @@ import (
 
 type SessionManager struct {
 	mu            sync.Mutex
-	adminSessions map[string]time.Time
+	adminSessions map[string]*adminSession
 	siteSessions  map[string]*siteSession
 	adminTTL      time.Duration
 	siteTTL       time.Duration
@@ -20,9 +20,14 @@ type siteSession struct {
 	Expires time.Time
 }
 
+type adminSession struct {
+	UserID  string
+	Expires time.Time
+}
+
 func New(adminTTL, siteTTL time.Duration) *SessionManager {
 	return &SessionManager{
-		adminSessions: make(map[string]time.Time),
+		adminSessions: make(map[string]*adminSession),
 		siteSessions:  make(map[string]*siteSession),
 		adminTTL:      adminTTL,
 		siteTTL:       siteTTL,
@@ -37,27 +42,27 @@ func (m *SessionManager) randomToken() string {
 	return hex.EncodeToString(buf)
 }
 
-func (m *SessionManager) CreateAdminSession() string {
+func (m *SessionManager) CreateAdminSession(userID string) string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	token := m.randomToken()
-	m.adminSessions[token] = time.Now().Add(m.adminTTL)
+	m.adminSessions[token] = &adminSession{UserID: userID, Expires: time.Now().Add(m.adminTTL)}
 	return token
 }
 
-func (m *SessionManager) ValidateAdmin(token string) bool {
+func (m *SessionManager) ValidateAdmin(token string) (string, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	expiry, ok := m.adminSessions[token]
+	sess, ok := m.adminSessions[token]
 	if !ok {
-		return false
+		return "", false
 	}
-	if time.Now().After(expiry) {
+	if time.Now().After(sess.Expires) {
 		delete(m.adminSessions, token)
-		return false
+		return "", false
 	}
-	m.adminSessions[token] = time.Now().Add(m.adminTTL)
-	return true
+	sess.Expires = time.Now().Add(m.adminTTL)
+	return sess.UserID, true
 }
 
 func (m *SessionManager) RevokeAdmin(token string) {

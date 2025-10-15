@@ -3,13 +3,15 @@ package models
 import "time"
 
 type Config struct {
-	AdminPasswordHash string `json:"adminPasswordHash"`
-	PublicBaseURL     string `json:"publicBaseUrl"`
+	AdminPasswordHash string       `json:"adminPasswordHash,omitempty"`
+	PublicBaseURL     string       `json:"publicBaseUrl"`
+	SAML              SAMLSettings `json:"saml"`
 }
 
 type AppData struct {
 	Sites  []*Site    `json:"sites"`
 	Tokens []*QRToken `json:"tokens"`
+	Users  []*User    `json:"users"`
 	Config Config     `json:"config"`
 }
 
@@ -111,4 +113,35 @@ type QRToken struct {
 	SiteID    string        `json:"siteId"`
 	CreatedAt time.Time     `json:"createdAt"`
 	UpdatedAt time.Time     `json:"updatedAt"`
+}
+
+type UserRole string
+
+const (
+	RoleOwner UserRole = "OWNER"
+	RoleAdmin UserRole = "ADMIN"
+)
+
+type User struct {
+	ID           string    `json:"id"`
+	Username     string    `json:"username"`
+	Email        string    `json:"email"`
+	PasswordHash string    `json:"passwordHash"`
+	Role         UserRole  `json:"role"`
+	CreatedBy    string    `json:"createdBy"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+}
+
+type SAMLSettings struct {
+	Enabled           bool   `json:"enabled"`
+	SPBaseURL         string `json:"spBaseUrl"`
+	SPEntityID        string `json:"spEntityId"`
+	SPKeyPEM          string `json:"spKeyPem"`
+	SPCertificatePEM  string `json:"spCertificatePem"`
+	IDPMetadataURL    string `json:"idpMetadataUrl"`
+	IDPMetadataXML    string `json:"idpMetadataXml"`
+	EmailAttribute    string `json:"emailAttribute"`
+	UsernameAttribute string `json:"usernameAttribute"`
+	AllowIDPInitiated bool   `json:"allowIdpInitiated"`
 }

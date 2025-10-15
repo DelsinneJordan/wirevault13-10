@@ -36,6 +36,10 @@ func main() {
 		Templates: tmpl,
 	}
 
+	if err := handler.RefreshSAML(); err != nil {
+		log.Printf("SAML configuration not loaded: %v", err)
+	}
+
 	mux := http.NewServeMux()
 	handler.RegisterRoutes(mux)
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))

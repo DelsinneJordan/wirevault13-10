@@ -3,19 +3,29 @@ package handlers
 import (
 	"archive/zip"
 	"bytes"
+	"context"
+	"crypto"
+	"crypto/x509"
 	"encoding/csv"
+	"encoding/pem"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/crewjam/saml"
+	"github.com/crewjam/saml/samlsp"
 	"wirevault/core/models"
 	"wirevault/core/session"
 	"wirevault/core/store"
@@ -25,6 +35,8 @@ type Handler struct {
 	Store     *store.Store
 	Sessions  *session.SessionManager
 	Templates *template.Template
+	samlMu    sync.RWMutex
+	saml      *samlsp.Middleware
 }
 
 const (
@@ -49,7 +61,9 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/documents/", h.handleDocument)
 
 	mux.HandleFunc("/admin/login", h.handleAdminLogin)
+	mux.HandleFunc("/admin/login/sso", h.handleAdminLoginSSO)
 	mux.HandleFunc("/admin/logout", h.handleAdminLogout)
+	mux.HandleFunc("/admin/saml/", h.handleAdminSAML)
 	mux.HandleFunc("/admin/sites", h.handleAdminSites)
 	mux.HandleFunc("/admin/site/", h.handleAdminSiteDetail)
 	mux.HandleFunc("/admin/tokens", h.handleAdminTokens)
@@ -93,6 +107,39 @@ func (h *Handler) render(w http.ResponseWriter, templateName string, data any) {
 	if err := h.Templates.ExecuteTemplate(w, templateName, viewData); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func (h *Handler) setSAMLMiddleware(mw *samlsp.Middleware) {
+	h.samlMu.Lock()
+	defer h.samlMu.Unlock()
+	h.saml = mw
+}
+
+func (h *Handler) getSAMLMiddleware() *samlsp.Middleware {
+	h.samlMu.RLock()
+	defer h.samlMu.RUnlock()
+	return h.saml
+}
+
+func (h *Handler) issueAdminSession(w http.ResponseWriter, user *models.User) {
+	token := h.Sessions.CreateAdminSession(user.ID)
+	http.SetCookie(w, &http.Cookie{
+		Name:     adminCookieName,
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   int((12 * time.Hour).Seconds()),
+	})
+}
+
+func (h *Handler) clearAdminCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:   adminCookieName,
+		Value:  "",
+		MaxAge: -1,
+		Path:   "/",
+	})
 }
 
 func toPublicSite(site *models.Site) publicSite {
@@ -358,49 +405,86 @@ func findAppliance(site *models.Site, applianceID string) *models.Appliance {
 }
 
 func (h *Handler) handleAdminLogin(w http.ResponseWriter, r *http.Request) {
+	if cookie, err := r.Cookie(adminCookieName); err == nil {
+		if _, ok := h.Sessions.ValidateAdmin(cookie.Value); ok {
+			http.Redirect(w, r, "/admin/sites", http.StatusSeeOther)
+			return
+		}
+	}
+	message := strings.TrimSpace(r.URL.Query().Get("msg"))
+	messageType := strings.TrimSpace(r.URL.Query().Get("type"))
 	if r.Method == http.MethodPost {
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "Invalid form", http.StatusBadRequest)
 			return
 		}
+		identifier := strings.TrimSpace(r.Form.Get("identifier"))
 		password := r.Form.Get("password")
-		if h.Store.VerifyAdminPassword(password) {
-			token := h.Sessions.CreateAdminSession()
-			http.SetCookie(w, &http.Cookie{
-				Name:     adminCookieName,
-				Value:    token,
-				Path:     "/",
-				HttpOnly: true,
-				SameSite: http.SameSiteLaxMode,
-				MaxAge:   int((12 * time.Hour).Seconds()),
-			})
+		if user, ok := h.Store.AuthenticateUser(identifier, password); ok {
+			h.issueAdminSession(w, user)
 			http.Redirect(w, r, "/admin/sites", http.StatusSeeOther)
 			return
 		}
 		h.render(w, "admin/login.html", map[string]any{
-			"Title":     "WireVault Admin",
-			"BodyClass": "admin auth",
-			"Error":     "Incorrect password.",
+			"Title":      "WireVault Admin",
+			"BodyClass":  "admin auth",
+			"Error":      "Incorrect credentials.",
+			"Identifier": identifier,
+			"SSOEnabled": h.Store.GetSAMLSettings().Enabled,
 		})
 		return
 	}
 	h.render(w, "admin/login.html", map[string]any{
-		"Title":     "WireVault Admin",
-		"BodyClass": "admin auth",
+		"Title":       "WireVault Admin",
+		"BodyClass":   "admin auth",
+		"SSOEnabled":  h.Store.GetSAMLSettings().Enabled,
+		"Message":     message,
+		"MessageType": messageType,
 	})
 }
 
-func (h *Handler) requireAdmin(w http.ResponseWriter, r *http.Request) bool {
+func (h *Handler) handleAdminLoginSSO(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	middleware := h.getSAMLMiddleware()
+	if middleware == nil {
+		http.Redirect(w, r, "/admin/login?msg=SSO%20is%20not%20configured&type=error", http.StatusSeeOther)
+		return
+	}
+	middleware.HandleStartAuthFlow(w, r)
+}
+
+func (h *Handler) handleAdminSAML(w http.ResponseWriter, r *http.Request) {
+	middleware := h.getSAMLMiddleware()
+	if middleware == nil {
+		http.NotFound(w, r)
+		return
+	}
+	middleware.ServeHTTP(w, r)
+}
+
+func (h *Handler) requireAdmin(w http.ResponseWriter, r *http.Request) (*models.User, bool) {
 	cookie, err := r.Cookie(adminCookieName)
 	if err != nil {
 		http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
-		return false
+		return nil, false
 	}
-	if !h.Sessions.ValidateAdmin(cookie.Value) {
+	userID, ok := h.Sessions.ValidateAdmin(cookie.Value)
+	if !ok {
+		h.clearAdminCookie(w)
 		http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
-		return false
+		return nil, false
 	}
-	return true
+	user, err := h.Store.GetUserByID(userID)
+	if err != nil {
+		h.Sessions.RevokeAdmin(cookie.Value)
+		h.clearAdminCookie(w)
+		http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
+		return nil, false
+	}
+	return user, true
 }
 
 func (h *Handler) handleAdminLogout(w http.ResponseWriter, r *http.Request) {
@@ -408,17 +492,12 @@ func (h *Handler) handleAdminLogout(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		h.Sessions.RevokeAdmin(cookie.Value)
 	}
-	http.SetCookie(w, &http.Cookie{
-		Name:   adminCookieName,
-		Value:  "",
-		MaxAge: -1,
-		Path:   "/",
-	})
+	h.clearAdminCookie(w)
 	http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
 }
 
 func (h *Handler) handleAdminSites(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
+	if _, ok := h.requireAdmin(w, r); !ok {
 		return
 	}
 	switch r.Method {
@@ -481,7 +560,7 @@ func (h *Handler) createSite(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleAdminSiteDetail(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
+	if _, ok := h.requireAdmin(w, r); !ok {
 		return
 	}
 	remainder := strings.TrimPrefix(r.URL.Path, "/admin/site/")
@@ -737,7 +816,7 @@ func (h *Handler) handleSiteTokenActions(w http.ResponseWriter, r *http.Request,
 }
 
 func (h *Handler) handleAdminTokens(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
+	if _, ok := h.requireAdmin(w, r); !ok {
 		return
 	}
 	switch r.Method {
@@ -1443,7 +1522,7 @@ const workbookRelsXML = `<?xml version="1.0" encoding="UTF-8"?>
 </Relationships>`
 
 func (h *Handler) handleAdminGenerateTokens(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
+	if _, ok := h.requireAdmin(w, r); !ok {
 		return
 	}
 	switch r.Method {
@@ -1495,7 +1574,7 @@ func (h *Handler) uniqueTokenShortID() string {
 }
 
 func (h *Handler) handleAdminExportTokens(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
+	if _, ok := h.requireAdmin(w, r); !ok {
 		return
 	}
 	format := r.URL.Query().Get("format")
@@ -1538,40 +1617,592 @@ func (h *Handler) exportTokensXLSX(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
+	currentUser, ok := h.requireAdmin(w, r)
+	if !ok {
 		return
 	}
+	tab := sanitizeSettingsTab(r.URL.Query().Get("tab"))
+	if tab == "" {
+		tab = "users"
+	}
+	message := strings.TrimSpace(r.URL.Query().Get("msg"))
+	messageType := strings.TrimSpace(r.URL.Query().Get("type"))
+	var errorMessage string
+	formValues := map[string]string{}
 	switch r.Method {
 	case http.MethodGet:
-		h.render(w, "admin/settings.html", map[string]any{
-			"Title":         "WireVault Admin · Settings",
-			"BodyClass":     "admin settings",
-			"PublicBaseURL": h.Store.GetPublicBaseURL(),
-			"Message":       r.URL.Query().Get("msg"),
-			"MessageType":   r.URL.Query().Get("type"),
-		})
+		// no-op
 	case http.MethodPost:
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "Invalid form", http.StatusBadRequest)
 			return
 		}
-		if newPassword := strings.TrimSpace(r.Form.Get("new_password")); newPassword != "" {
-			if len(newPassword) < 6 {
-				h.render(w, "admin/settings.html", map[string]any{
-					"Title":         "WireVault Admin · Settings",
-					"BodyClass":     "admin settings",
-					"PublicBaseURL": h.Store.GetPublicBaseURL(),
-					"Error":         "Password must be at least 6 characters.",
-				})
+		tab = sanitizeSettingsTab(r.Form.Get("tab"))
+		if tab == "" {
+			tab = "users"
+		}
+		intent := r.Form.Get("intent")
+		switch intent {
+		case "create_user":
+			message, messageType, errorMessage, formValues = h.handleCreateUserForm(currentUser, r)
+			if errorMessage == "" {
+				h.redirectSettings(w, r, tab, message, messageType)
 				return
 			}
-			h.Store.UpdateAdminPassword(newPassword)
+		case "update_user":
+			message, messageType, errorMessage = h.handleUpdateUserForm(currentUser, r)
+			if errorMessage == "" {
+				h.redirectSettings(w, r, tab, message, messageType)
+				return
+			}
+		case "delete_user":
+			message, messageType, errorMessage = h.handleDeleteUserForm(currentUser, r)
+			if errorMessage == "" {
+				h.redirectSettings(w, r, tab, message, messageType)
+				return
+			}
+		case "change_password":
+			message, messageType, errorMessage = h.handleChangePasswordForm(currentUser, r)
+			if errorMessage == "" {
+				h.redirectSettings(w, r, "security", message, messageType)
+				return
+			}
+		case "update_public_url":
+			message, messageType, errorMessage = h.handleUpdatePublicURLForm(currentUser, r)
+			if errorMessage == "" {
+				h.redirectSettings(w, r, "security", message, messageType)
+				return
+			}
+		case "update_saml":
+			message, messageType, errorMessage = h.handleUpdateSAMLForm(currentUser, r)
+			if errorMessage == "" {
+				h.redirectSettings(w, r, "sso", message, messageType)
+				return
+			}
+		default:
+			http.Error(w, "Unsupported action", http.StatusBadRequest)
+			return
 		}
-		if publicURL := strings.TrimSpace(r.Form.Get("public_url")); publicURL != "" {
-			h.Store.SetPublicBaseURL(publicURL)
-		}
-		http.Redirect(w, r, "/admin/settings?msg=Settings%20updated&type=success", http.StatusSeeOther)
 	default:
-		http.NotFound(w, r)
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
 	}
+	h.renderSettingsPage(w, currentUser, tab, message, messageType, errorMessage, formValues)
+}
+
+func sanitizeSettingsTab(tab string) string {
+	switch strings.ToLower(strings.TrimSpace(tab)) {
+	case "users":
+		return "users"
+	case "security":
+		return "security"
+	case "sso":
+		return "sso"
+	default:
+		return ""
+	}
+}
+
+func (h *Handler) redirectSettings(w http.ResponseWriter, r *http.Request, tab, msg, msgType string) {
+	values := url.Values{}
+	if tab != "" {
+		values.Set("tab", tab)
+	}
+	if msg != "" {
+		values.Set("msg", msg)
+	}
+	if msgType != "" {
+		values.Set("type", msgType)
+	}
+	target := "/admin/settings"
+	if encoded := values.Encode(); encoded != "" {
+		target = target + "?" + encoded
+	}
+	http.Redirect(w, r, target, http.StatusSeeOther)
+}
+
+func (h *Handler) renderSettingsPage(w http.ResponseWriter, currentUser *models.User, tab, message, messageType, errorMessage string, formValues map[string]string) {
+	users := h.visibleUsers(currentUser)
+	allUsers := h.Store.ListUsers()
+	creatorNames := make(map[string]string)
+	for _, user := range allUsers {
+		creatorNames[user.ID] = user.Username
+	}
+	ownerCount := h.countOwners()
+	data := map[string]any{
+		"Title":         "WireVault Admin · Settings",
+		"BodyClass":     "admin settings",
+		"PublicBaseURL": h.Store.GetPublicBaseURL(),
+		"Users":         users,
+		"CurrentUser":   currentUser,
+		"ActiveTab":     tab,
+		"Message":       message,
+		"MessageType":   messageType,
+		"Error":         errorMessage,
+		"CreatorNames":  creatorNames,
+		"OwnerCount":    ownerCount,
+		"FormValues":    formValues,
+		"SAML":          h.Store.GetSAMLSettings(),
+	}
+	h.render(w, "admin/settings.html", data)
+}
+
+func (h *Handler) visibleUsers(currentUser *models.User) []*models.User {
+	all := h.Store.ListUsers()
+	filtered := make([]*models.User, 0, len(all))
+	for _, user := range all {
+		if currentUser.Role == models.RoleOwner || user.CreatedBy == currentUser.ID || user.ID == currentUser.ID {
+			filtered = append(filtered, user)
+		}
+	}
+	sort.Slice(filtered, func(i, j int) bool {
+		left := strings.ToLower(strings.TrimSpace(filtered[i].Username))
+		right := strings.ToLower(strings.TrimSpace(filtered[j].Username))
+		if left == right {
+			return filtered[i].CreatedAt.Before(filtered[j].CreatedAt)
+		}
+		return left < right
+	})
+	return filtered
+}
+
+func (h *Handler) countOwners() int {
+	users := h.Store.ListUsers()
+	count := 0
+	for _, user := range users {
+		if user.Role == models.RoleOwner {
+			count++
+		}
+	}
+	return count
+}
+
+func canManageUser(current, target *models.User) bool {
+	if current.Role == models.RoleOwner {
+		return true
+	}
+	if target.ID == current.ID {
+		return true
+	}
+	return target.CreatedBy == current.ID
+}
+
+func (h *Handler) handleCreateUserForm(currentUser *models.User, r *http.Request) (string, string, string, map[string]string) {
+	values := map[string]string{
+		"username": strings.TrimSpace(r.Form.Get("username")),
+		"email":    strings.TrimSpace(r.Form.Get("email")),
+		"role":     strings.TrimSpace(r.Form.Get("role")),
+	}
+	password := r.Form.Get("password")
+	confirm := r.Form.Get("confirm_password")
+	role := models.RoleAdmin
+	if currentUser.Role == models.RoleOwner {
+		switch strings.ToUpper(values["role"]) {
+		case string(models.RoleOwner):
+			role = models.RoleOwner
+			values["role"] = string(models.RoleOwner)
+		default:
+			role = models.RoleAdmin
+			values["role"] = string(models.RoleAdmin)
+		}
+	} else {
+		values["role"] = string(models.RoleAdmin)
+	}
+	if values["username"] == "" {
+		return "", "", "Username is required.", values
+	}
+	if h.Store.IsUsernameTaken(values["username"], "") {
+		return "", "", "Username is already in use.", values
+	}
+	if values["email"] != "" && h.Store.IsEmailTaken(values["email"], "") {
+		return "", "", "Email is already in use.", values
+	}
+	if len(password) < 8 {
+		return "", "", "Password must be at least 8 characters.", values
+	}
+	if password != confirm {
+		return "", "", "Passwords do not match.", values
+	}
+	newUser := &models.User{
+		Username:  values["username"],
+		Email:     values["email"],
+		Role:      role,
+		CreatedBy: currentUser.ID,
+	}
+	saved, err := h.Store.SaveUser(newUser)
+	if err != nil {
+		return "", "", fmt.Sprintf("Failed to create user: %v", err), values
+	}
+	if err := h.Store.UpdateUserPassword(saved.ID, password); err != nil {
+		return "", "", fmt.Sprintf("Failed to set user password: %v", err), values
+	}
+	return fmt.Sprintf("User %s created", saved.Username), "success", "", map[string]string{}
+}
+
+func (h *Handler) handleUpdateUserForm(currentUser *models.User, r *http.Request) (string, string, string) {
+	userID := strings.TrimSpace(r.Form.Get("user_id"))
+	if userID == "" {
+		return "", "", "User not found"
+	}
+	target, err := h.Store.GetUserByID(userID)
+	if err != nil {
+		return "", "", "User not found"
+	}
+	if !canManageUser(currentUser, target) {
+		return "", "", "You do not have permission to manage this user."
+	}
+	username := strings.TrimSpace(r.Form.Get("username"))
+	email := strings.TrimSpace(r.Form.Get("email"))
+	if username == "" {
+		return "", "", "Username is required."
+	}
+	if h.Store.IsUsernameTaken(username, target.ID) {
+		return "", "", "Username is already in use."
+	}
+	if email != "" && h.Store.IsEmailTaken(email, target.ID) {
+		return "", "", "Email is already in use."
+	}
+	newRole := target.Role
+	requestedRole := strings.ToUpper(strings.TrimSpace(r.Form.Get("role")))
+	if currentUser.Role == models.RoleOwner {
+		if requestedRole == string(models.RoleOwner) {
+			newRole = models.RoleOwner
+		} else {
+			newRole = models.RoleAdmin
+		}
+	} else {
+		newRole = models.RoleAdmin
+	}
+	if target.ID == currentUser.ID && newRole != models.RoleOwner {
+		return "", "", "You cannot change your own role."
+	}
+	if target.Role == models.RoleOwner && newRole != models.RoleOwner && h.countOwners() <= 1 {
+		return "", "", "At least one owner must remain."
+	}
+	target.Username = username
+	target.Email = email
+	target.Role = newRole
+	target.UpdatedAt = time.Now()
+	if _, err := h.Store.SaveUser(target); err != nil {
+		return "", "", fmt.Sprintf("Failed to update user: %v", err)
+	}
+	return "User updated", "success", ""
+}
+
+func (h *Handler) handleDeleteUserForm(currentUser *models.User, r *http.Request) (string, string, string) {
+	userID := strings.TrimSpace(r.Form.Get("user_id"))
+	if userID == "" {
+		return "", "", "User not found"
+	}
+	target, err := h.Store.GetUserByID(userID)
+	if err != nil {
+		return "", "", "User not found"
+	}
+	if target.ID == currentUser.ID {
+		return "", "", "You cannot delete your own account."
+	}
+	if !canManageUser(currentUser, target) {
+		return "", "", "You do not have permission to manage this user."
+	}
+	if target.Role == models.RoleOwner && h.countOwners() <= 1 {
+		return "", "", "At least one owner must remain."
+	}
+	if err := h.Store.DeleteUser(userID); err != nil {
+		return "", "", fmt.Sprintf("Failed to delete user: %v", err)
+	}
+	return "User deleted", "success", ""
+}
+
+func (h *Handler) handleChangePasswordForm(currentUser *models.User, r *http.Request) (string, string, string) {
+	newPassword := strings.TrimSpace(r.Form.Get("new_password"))
+	confirm := strings.TrimSpace(r.Form.Get("confirm_password"))
+	if newPassword == "" {
+		return "", "", "New password is required."
+	}
+	if len(newPassword) < 8 {
+		return "", "", "Password must be at least 8 characters."
+	}
+	if newPassword != confirm {
+		return "", "", "Passwords do not match."
+	}
+	if currentUser.PasswordHash != "" {
+		current := r.Form.Get("current_password")
+		if _, ok := h.Store.AuthenticateUser(currentUser.Username, current); !ok {
+			return "", "", "Current password is incorrect."
+		}
+	}
+	if err := h.Store.UpdateUserPassword(currentUser.ID, newPassword); err != nil {
+		return "", "", "Failed to update password."
+	}
+	return "Password updated", "success", ""
+}
+
+func (h *Handler) handleUpdatePublicURLForm(currentUser *models.User, r *http.Request) (string, string, string) {
+	if currentUser.Role != models.RoleOwner {
+		return "", "", "You do not have permission to update the base URL."
+	}
+	publicURL := strings.TrimSpace(r.Form.Get("public_url"))
+	if publicURL == "" {
+		return "", "", "Base URL is required."
+	}
+	if _, err := url.ParseRequestURI(publicURL); err != nil {
+		return "", "", "Base URL must be a valid URL."
+	}
+	if err := h.Store.SetPublicBaseURL(publicURL); err != nil {
+		return "", "", "Failed to update base URL."
+	}
+	return "Base URL updated", "success", ""
+}
+
+func (h *Handler) handleUpdateSAMLForm(currentUser *models.User, r *http.Request) (string, string, string) {
+	if currentUser.Role != models.RoleOwner {
+		return "", "", "You do not have permission to update SSO settings."
+	}
+	settings := h.Store.GetSAMLSettings()
+	settings.Enabled = r.Form.Has("enabled")
+	settings.AllowIDPInitiated = r.Form.Has("allow_idp_initiated")
+	settings.SPBaseURL = r.Form.Get("sp_base_url")
+	settings.SPEntityID = r.Form.Get("sp_entity_id")
+	settings.SPKeyPEM = r.Form.Get("sp_key")
+	settings.SPCertificatePEM = r.Form.Get("sp_certificate")
+	settings.IDPMetadataURL = r.Form.Get("idp_metadata_url")
+	settings.IDPMetadataXML = r.Form.Get("idp_metadata_xml")
+	settings.EmailAttribute = r.Form.Get("email_attribute")
+	settings.UsernameAttribute = r.Form.Get("username_attribute")
+
+	var middleware *samlsp.Middleware
+	if settings.Enabled {
+		mw, err := h.buildSAMLMiddleware(settings)
+		if err != nil {
+			return "", "", fmt.Sprintf("Failed to validate SSO settings: %v", err)
+		}
+		middleware = mw
+	}
+	if err := h.Store.UpdateSAMLSettings(settings); err != nil {
+		return "", "", fmt.Sprintf("Failed to persist SSO settings: %v", err)
+	}
+	h.setSAMLMiddleware(middleware)
+	if settings.Enabled {
+		return "SSO settings updated", "success", ""
+	}
+	return "SSO disabled", "success", ""
+}
+
+func (h *Handler) RefreshSAML() error {
+	settings := h.Store.GetSAMLSettings()
+	mw, err := h.buildSAMLMiddleware(settings)
+	if err != nil {
+		h.setSAMLMiddleware(nil)
+		return err
+	}
+	h.setSAMLMiddleware(mw)
+	return nil
+}
+
+func (h *Handler) buildSAMLMiddleware(settings models.SAMLSettings) (*samlsp.Middleware, error) {
+	if !settings.Enabled {
+		return nil, nil
+	}
+	if strings.TrimSpace(settings.SPBaseURL) == "" {
+		return nil, errors.New("service provider base URL is required")
+	}
+	if strings.TrimSpace(settings.SPEntityID) == "" {
+		return nil, errors.New("service provider entity ID is required")
+	}
+	baseURL, err := url.Parse(strings.TrimSpace(settings.SPBaseURL))
+	if err != nil {
+		return nil, fmt.Errorf("invalid service provider base URL: %w", err)
+	}
+	if baseURL.Scheme == "" || baseURL.Host == "" {
+		return nil, errors.New("service provider base URL must include scheme and host")
+	}
+	key, err := parsePrivateKeyPEM(settings.SPKeyPEM)
+	if err != nil {
+		return nil, fmt.Errorf("invalid service provider private key: %w", err)
+	}
+	cert, intermediates, err := parseCertificateChain(settings.SPCertificatePEM)
+	if err != nil {
+		return nil, fmt.Errorf("invalid service provider certificate: %w", err)
+	}
+	var metadata *saml.EntityDescriptor
+	if strings.TrimSpace(settings.IDPMetadataXML) != "" {
+		metadata, err = samlsp.ParseMetadata([]byte(settings.IDPMetadataXML))
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse IdP metadata XML: %w", err)
+		}
+	} else if strings.TrimSpace(settings.IDPMetadataURL) != "" {
+		metadataURL, err := url.Parse(strings.TrimSpace(settings.IDPMetadataURL))
+		if err != nil {
+			return nil, fmt.Errorf("invalid IdP metadata URL: %w", err)
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		metadata, err = samlsp.FetchMetadata(ctx, http.DefaultClient, *metadataURL)
+		if err != nil {
+			return nil, fmt.Errorf("unable to fetch IdP metadata: %w", err)
+		}
+	} else {
+		return nil, errors.New("provide either IdP metadata XML or URL")
+	}
+	spURL := buildServiceProviderURL(baseURL)
+	opts := samlsp.Options{
+		EntityID:           settings.SPEntityID,
+		URL:                *spURL,
+		Key:                key,
+		Certificate:        cert,
+		Intermediates:      intermediates,
+		IDPMetadata:        metadata,
+		AllowIDPInitiated:  settings.AllowIDPInitiated,
+		DefaultRedirectURI: "/admin/sites",
+		CookieName:         "wv_saml",
+		CookieSameSite:     http.SameSiteLaxMode,
+		SignRequest:        true,
+	}
+	middleware, err := samlsp.New(opts)
+	if err != nil {
+		return nil, err
+	}
+	middleware.Session = &samlSessionProvider{handler: h}
+	middleware.OnError = func(w http.ResponseWriter, r *http.Request, err error) {
+		http.Redirect(w, r, "/admin/login?msg="+url.QueryEscape("SSO login failed: "+err.Error())+"&type=error", http.StatusSeeOther)
+	}
+	return middleware, nil
+}
+
+func buildServiceProviderURL(base *url.URL) *url.URL {
+	clone := *base
+	pathPart := strings.TrimSuffix(clone.Path, "/")
+	pathPart = path.Join(pathPart, "/admin/saml")
+	if !strings.HasPrefix(pathPart, "/") {
+		pathPart = "/" + pathPart
+	}
+	clone.Path = pathPart
+	clone.RawQuery = ""
+	clone.Fragment = ""
+	return &clone
+}
+
+func parsePrivateKeyPEM(pemData string) (crypto.Signer, error) {
+	data := []byte(strings.TrimSpace(pemData))
+	for len(data) > 0 {
+		var block *pem.Block
+		block, data = pem.Decode(data)
+		if block == nil {
+			break
+		}
+		switch block.Type {
+		case "RSA PRIVATE KEY":
+			key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+			if err != nil {
+				return nil, err
+			}
+			return key, nil
+		case "EC PRIVATE KEY":
+			key, err := x509.ParseECPrivateKey(block.Bytes)
+			if err != nil {
+				return nil, err
+			}
+			return key, nil
+		case "PRIVATE KEY":
+			parsed, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+			if err != nil {
+				return nil, err
+			}
+			signer, ok := parsed.(crypto.Signer)
+			if !ok {
+				return nil, fmt.Errorf("unsupported private key type %T", parsed)
+			}
+			return signer, nil
+		}
+	}
+	return nil, errors.New("no private key found in PEM data")
+}
+
+func parseCertificateChain(pemData string) (*x509.Certificate, []*x509.Certificate, error) {
+	data := []byte(strings.TrimSpace(pemData))
+	var cert *x509.Certificate
+	intermediates := []*x509.Certificate{}
+	for len(data) > 0 {
+		var block *pem.Block
+		block, data = pem.Decode(data)
+		if block == nil {
+			break
+		}
+		if block.Type != "CERTIFICATE" {
+			continue
+		}
+		parsed, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return nil, nil, err
+		}
+		if cert == nil {
+			cert = parsed
+		} else {
+			intermediates = append(intermediates, parsed)
+		}
+	}
+	if cert == nil {
+		return nil, nil, errors.New("no certificate found in PEM data")
+	}
+	return cert, intermediates, nil
+}
+
+func assertionAttributeValue(assertion *saml.Assertion, name string) string {
+	attrName := strings.TrimSpace(name)
+	if attrName == "" {
+		return ""
+	}
+	for _, statement := range assertion.AttributeStatements {
+		for _, attr := range statement.Attributes {
+			if strings.EqualFold(attr.Name, attrName) || strings.EqualFold(attr.FriendlyName, attrName) {
+				for _, value := range attr.Values {
+					if v := strings.TrimSpace(value.Value); v != "" {
+						return v
+					}
+				}
+			}
+		}
+	}
+	return ""
+}
+
+func (h *Handler) createAdminSessionFromAssertion(w http.ResponseWriter, assertion *saml.Assertion) error {
+	settings := h.Store.GetSAMLSettings()
+	identifiers := []string{}
+	if v := assertionAttributeValue(assertion, settings.EmailAttribute); v != "" {
+		identifiers = append(identifiers, v)
+	}
+	if v := assertionAttributeValue(assertion, settings.UsernameAttribute); v != "" {
+		identifiers = append(identifiers, v)
+	}
+	if assertion.Subject != nil && assertion.Subject.NameID != nil {
+		if v := strings.TrimSpace(assertion.Subject.NameID.Value); v != "" {
+			identifiers = append(identifiers, v)
+		}
+	}
+	for _, ident := range identifiers {
+		user, err := h.Store.GetUserByIdentifier(ident)
+		if err == nil {
+			h.issueAdminSession(w, user)
+			return nil
+		}
+	}
+	return fmt.Errorf("no matching admin user for SSO identity")
+}
+
+type samlSessionProvider struct {
+	handler *Handler
+}
+
+func (p *samlSessionProvider) CreateSession(w http.ResponseWriter, r *http.Request, assertion *saml.Assertion) error {
+	return p.handler.createAdminSessionFromAssertion(w, assertion)
+}
+
+func (p *samlSessionProvider) DeleteSession(w http.ResponseWriter, r *http.Request) error {
+	p.handler.clearAdminCookie(w)
+	return nil
+}
+
+func (p *samlSessionProvider) GetSession(r *http.Request) (samlsp.Session, error) {
+	return nil, samlsp.ErrNoSession
 }
