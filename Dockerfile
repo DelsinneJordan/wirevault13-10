@@ -1,43 +1,42 @@
-# syntax=docker/dockerfile:1
-FROM golang:1.22 AS builder
+# --- Build stage ---
+# Pin to a Go version that satisfies go.mod
+ARG GO_VERSION=1.24.3
+FROM golang:${GO_VERSION}-bookworm AS builder
+
 WORKDIR /app
 
-# Copy module definition first for dependency caching
-COPY go.mod ./
-RUN go mod download
+# Cache deps first
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go mod download
 
-# Copy the rest of the source
+# Copy source and build a static binary
 COPY . .
+ENV CGO_ENABLED=0 GOOS=linux
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go build -ldflags="-s -w" -o wirevault .
 
-# Build the statically linked binary
-RUN CGO_ENABLED=0 GOOS=linux go build -o wirevault ./...
-
+# --- Runtime stage ---
 FROM debian:bookworm-slim AS runtime
-
-# Install minimal certificates for outgoing HTTPS (token export, etc.)
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+ && apt-get install -y --no-install-recommends ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 
-ENV APP_HOME=/app \
-    ADDR=:8080
+WORKDIR /app
+# Folders for persisted data
+RUN mkdir -p /app/data /app/media
 
-WORKDIR ${APP_HOME}
+# Copy binary
+COPY --from=builder /app/wirevault /app/wirevault
 
-# Copy application binary and assets
-COPY --from=builder /app/wirevault ./wirevault
-COPY --from=builder /app/templates ./templates
-COPY --from=builder /app/static ./static
+# Non-root user
+RUN useradd -r -u 10001 appuser
+USER appuser
 
-# Prepare persistent directories for JSON store and uploads
-RUN mkdir -p data media \
-    && groupadd --system wirevault \
-    && useradd --system --gid wirevault --home ${APP_HOME} wirevault \
-    && chown -R wirevault:wirevault ${APP_HOME}
-
-USER wirevault
-
+# App listens on 8080
 EXPOSE 8080
+ENV ADDR=:8080
 
 ENTRYPOINT ["/app/wirevault"]
-CMD ["-addr", ":8080"]
