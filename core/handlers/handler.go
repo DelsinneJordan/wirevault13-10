@@ -1668,13 +1668,13 @@ func (h *Handler) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		case "update_public_url":
-			message, messageType, errorMessage = h.handleUpdatePublicURLForm(r)
+			message, messageType, errorMessage = h.handleUpdatePublicURLForm(currentUser, r)
 			if errorMessage == "" {
 				h.redirectSettings(w, r, "security", message, messageType)
 				return
 			}
 		case "update_saml":
-			message, messageType, errorMessage = h.handleUpdateSAMLForm(r)
+			message, messageType, errorMessage = h.handleUpdateSAMLForm(currentUser, r)
 			if errorMessage == "" {
 				h.redirectSettings(w, r, "sso", message, messageType)
 				return
@@ -1937,7 +1937,10 @@ func (h *Handler) handleChangePasswordForm(currentUser *models.User, r *http.Req
 	return "Password updated", "success", ""
 }
 
-func (h *Handler) handleUpdatePublicURLForm(r *http.Request) (string, string, string) {
+func (h *Handler) handleUpdatePublicURLForm(currentUser *models.User, r *http.Request) (string, string, string) {
+	if currentUser.Role != models.RoleOwner {
+		return "", "", "You do not have permission to update the base URL."
+	}
 	publicURL := strings.TrimSpace(r.Form.Get("public_url"))
 	if publicURL == "" {
 		return "", "", "Base URL is required."
@@ -1951,7 +1954,10 @@ func (h *Handler) handleUpdatePublicURLForm(r *http.Request) (string, string, st
 	return "Base URL updated", "success", ""
 }
 
-func (h *Handler) handleUpdateSAMLForm(r *http.Request) (string, string, string) {
+func (h *Handler) handleUpdateSAMLForm(currentUser *models.User, r *http.Request) (string, string, string) {
+	if currentUser.Role != models.RoleOwner {
+		return "", "", "You do not have permission to update SSO settings."
+	}
 	settings := h.Store.GetSAMLSettings()
 	settings.Enabled = r.Form.Has("enabled")
 	settings.AllowIDPInitiated = r.Form.Has("allow_idp_initiated")
