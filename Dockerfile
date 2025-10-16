@@ -24,7 +24,7 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
-WORKDIR ./app
+WORKDIR /app
 # Folders for persisted data
 RUN mkdir -p /app/data /app/media
 
@@ -37,6 +37,6 @@ USER appuser
 
 # App listens on 8080
 EXPOSE 8080
-ENV ADDR=:8080
 
 ENTRYPOINT ["/app/wirevault"]
+CMD ["-addr", ":8080"]
