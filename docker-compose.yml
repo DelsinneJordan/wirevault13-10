@@ -18,7 +18,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=dokploy-network"
-      - "traefik.http.routers.wirevault.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.wirevault.rule=Host(`{{ env \"DOMAIN\" }}`)"
       - "traefik.http.routers.wirevault.entrypoints=web"
       - "traefik.http.services.wirevault.loadbalancer.server.port=8080"
 
