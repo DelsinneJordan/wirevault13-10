@@ -35,8 +35,10 @@ RUN mkdir -p /app/data /app/media \
     && chown -R appuser:appuser /app/data /app/media \
     && chmod 0775 /app/data /app/media
 
-# Copy binary
+# Copy binary and runtime assets
 COPY --from=builder /app/wirevault /app/wirevault
+COPY --from=builder /app/templates /app/templates
+COPY --from=builder /app/static /app/static
 
 USER appuser
 
