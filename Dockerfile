@@ -25,14 +25,19 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+# Non-root user
+RUN useradd -r -u 10001 appuser
+
 # Folders for persisted data
-RUN mkdir -p /app/data /app/media
+# Prepare persisted directories with relaxed permissions so the runtime
+# user (and external volume mounts) can write to them safely.
+RUN mkdir -p /app/data /app/media \
+    && chown -R appuser:appuser /app/data /app/media \
+    && chmod 0775 /app/data /app/media
 
 # Copy binary
 COPY --from=builder /app/wirevault /app/wirevault
 
-# Non-root user
-RUN useradd -r -u 10001 appuser
 USER appuser
 
 # App listens on 8080
