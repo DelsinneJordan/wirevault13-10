@@ -54,6 +54,12 @@ type applianceGroup struct {
 	Items    []*models.Appliance
 }
 
+var publicHeaderActions = template.HTML(strings.Join([]string{
+	`<a class="btn btn-secondary" href="/">Home</a>`,
+	`<a class="btn btn-secondary" href="/customer/access">Customer portal</a>`,
+	`<a class="btn btn-secondary" href="/admin/login">Admin login</a>`,
+}, ""))
+
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/", h.handleRoot)
 	mux.HandleFunc("/customer/access", h.handleCustomerAccessStart)
@@ -81,7 +87,7 @@ func (h *Handler) handleRoot(w http.ResponseWriter, r *http.Request) {
 	h.render(w, "home.html", map[string]any{
 		"Title":         "WireVault · Electrical intelligence for every site",
 		"BodyClass":     "landing",
-		"HeaderActions": template.HTML(`<a class="btn btn-secondary" href="/admin/login">Admin login</a>`),
+		"HeaderActions": publicHeaderActions,
 	})
 }
 
@@ -164,9 +170,10 @@ func (h *Handler) handleAccess(w http.ResponseWriter, r *http.Request) {
 	token, err := h.Store.GetTokenByShortID(tokenShortID)
 	if err != nil {
 		h.render(w, "core/pin_entry.html", map[string]any{
-			"Title":     "WireVault · Enter PIN",
-			"BodyClass": "customer",
-			"Error":     "PIN is incorrect.",
+			"Title":         "WireVault · Enter PIN",
+			"BodyClass":     "customer",
+			"Error":         "PIN is incorrect.",
+			"HeaderActions": publicHeaderActions,
 		})
 		return
 	}
@@ -196,15 +203,17 @@ func (h *Handler) handleAccess(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		h.render(w, "core/pin_entry.html", map[string]any{
-			"Error":   "PIN is incorrect.",
-			"TokenID": tokenShortID,
+			"Error":         "PIN is incorrect.",
+			"TokenID":       tokenShortID,
+			"HeaderActions": publicHeaderActions,
 		})
 		return
 	}
 
 	h.render(w, "core/pin_entry.html", map[string]any{
-		"Title":     "WireVault · Enter PIN",
-		"BodyClass": "customer",
+		"Title":         "WireVault · Enter PIN",
+		"BodyClass":     "customer",
+		"HeaderActions": publicHeaderActions,
 	})
 }
 
@@ -217,7 +226,7 @@ func (h *Handler) handleCustomerAccessStart(w http.ResponseWriter, r *http.Reque
 	viewData := map[string]any{
 		"Title":         "WireVault · Customer access",
 		"BodyClass":     "customer access-start",
-		"HeaderActions": template.HTML(`<a class="btn btn-secondary" href="/admin/login">Admin login</a>`),
+		"HeaderActions": publicHeaderActions,
 	}
 
 	switch r.Method {
@@ -269,9 +278,10 @@ func (h *Handler) handleSite(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(siteCookieName)
 	if err != nil || !h.Sessions.ValidateSite(cookie.Value, site.ID) {
 		h.render(w, "core/session_expired.html", map[string]any{
-			"Title":     "WireVault · Session expired",
-			"BodyClass": "customer",
-			"TokenURL":  fmt.Sprintf("/access/%s", h.findTokenShortIDForSite(site.ID)),
+			"Title":         "WireVault · Session expired",
+			"BodyClass":     "customer",
+			"TokenURL":      fmt.Sprintf("/access/%s", h.findTokenShortIDForSite(site.ID)),
+			"HeaderActions": publicHeaderActions,
 		})
 		return
 	}
@@ -294,10 +304,11 @@ func (h *Handler) handleSite(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		h.render(w, "core/board_detail.html", map[string]any{
-			"Title":     fmt.Sprintf("%s · %s", board.Name, site.Address),
-			"BodyClass": "customer",
-			"Site":      toPublicSite(site),
-			"Board":     board,
+			"Title":         fmt.Sprintf("%s · %s", board.Name, site.Address),
+			"BodyClass":     "customer",
+			"Site":          toPublicSite(site),
+			"Board":         board,
+			"HeaderActions": publicHeaderActions,
 		})
 	case "appliances":
 		if len(parts) < 3 {
@@ -311,10 +322,11 @@ func (h *Handler) handleSite(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		h.render(w, "core/appliance_detail.html", map[string]any{
-			"Title":     fmt.Sprintf("%s · %s", appliance.Name, site.Address),
-			"BodyClass": "customer",
-			"Site":      toPublicSite(site),
-			"Appliance": appliance,
+			"Title":         fmt.Sprintf("%s · %s", appliance.Name, site.Address),
+			"BodyClass":     "customer",
+			"Site":          toPublicSite(site),
+			"Appliance":     appliance,
+			"HeaderActions": publicHeaderActions,
 		})
 	default:
 		http.NotFound(w, r)
@@ -348,6 +360,7 @@ func (h *Handler) buildSiteOverviewContext(site *models.Site) map[string]any {
 		"Site":            toPublicSite(site),
 		"Boards":          site.Boards,
 		"ApplianceGroups": groups,
+		"HeaderActions":   publicHeaderActions,
 	}
 }
 
@@ -384,9 +397,10 @@ func (h *Handler) handleDocument(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(siteCookieName)
 	if err != nil || !h.Sessions.ValidateSite(cookie.Value, site.ID) {
 		h.render(w, "core/session_expired.html", map[string]any{
-			"Title":     "WireVault · Session expired",
-			"BodyClass": "customer",
-			"TokenURL":  fmt.Sprintf("/access/%s", h.findTokenShortIDForSite(site.ID)),
+			"Title":         "WireVault · Session expired",
+			"BodyClass":     "customer",
+			"TokenURL":      fmt.Sprintf("/access/%s", h.findTokenShortIDForSite(site.ID)),
+			"HeaderActions": publicHeaderActions,
 		})
 		return
 	}
