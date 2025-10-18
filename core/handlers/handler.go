@@ -56,6 +56,7 @@ type applianceGroup struct {
 
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/", h.handleRoot)
+	mux.HandleFunc("/customer/access", h.handleCustomerAccessStart)
 	mux.HandleFunc("/access/", h.handleAccess)
 	mux.HandleFunc("/site/", h.handleSite)
 	mux.HandleFunc("/documents/", h.handleDocument)
@@ -205,6 +206,51 @@ func (h *Handler) handleAccess(w http.ResponseWriter, r *http.Request) {
 		"Title":     "WireVault · Enter PIN",
 		"BodyClass": "customer",
 	})
+}
+
+func (h *Handler) handleCustomerAccessStart(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/customer/access" {
+		http.NotFound(w, r)
+		return
+	}
+
+	viewData := map[string]any{
+		"Title":         "WireVault · Customer access",
+		"BodyClass":     "customer access-start",
+		"HeaderActions": template.HTML(`<a class="btn btn-secondary" href="/admin/login">Admin login</a>`),
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		h.render(w, "core/site_lookup.html", viewData)
+	case http.MethodPost:
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "Invalid form", http.StatusBadRequest)
+			return
+		}
+		shortID := strings.TrimSpace(r.Form.Get("shortId"))
+		viewData["ShortIDValue"] = shortID
+		if shortID == "" {
+			viewData["Error"] = "Enter the site short ID printed alongside the QR code."
+			h.render(w, "core/site_lookup.html", viewData)
+			return
+		}
+		site, err := h.Store.GetSiteByShortID(shortID)
+		if err != nil {
+			viewData["Error"] = "We couldn't find a site with that short ID. Check the label and try again."
+			h.render(w, "core/site_lookup.html", viewData)
+			return
+		}
+		tokenShortID := h.findTokenShortIDForSite(site.ID)
+		if tokenShortID == "" {
+			viewData["Error"] = "That site doesn't have an active QR token yet. Please contact your installer for support."
+			h.render(w, "core/site_lookup.html", viewData)
+			return
+		}
+		http.Redirect(w, r, fmt.Sprintf("/access/%s", tokenShortID), http.StatusSeeOther)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
 }
 
 func (h *Handler) handleSite(w http.ResponseWriter, r *http.Request) {
