@@ -1,0 +1,10 @@
+# Build context exclusions
+.git
+.gitignore
+deploy/
+data/*
+media/*
+*.log
+*.env
+*.local
+node_modules/
