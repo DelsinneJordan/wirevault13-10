@@ -2,10 +2,13 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"wirevault/core/handlers"
@@ -63,6 +66,23 @@ func loadTemplates() (*template.Template, error) {
 		},
 		"currentYear": func() int {
 			return time.Now().Year()
+		},
+		"assetURL": func(path string) string {
+			if path == "" {
+				return ""
+			}
+			if !strings.HasPrefix(path, "/") {
+				path = "/" + path
+			}
+			if !strings.HasPrefix(path, "/static/") {
+				return path
+			}
+			relPath := strings.TrimPrefix(path, "/")
+			info, err := os.Stat(relPath)
+			if err != nil {
+				return path
+			}
+			return fmt.Sprintf("%s?v=%d", path, info.ModTime().Unix())
 		},
 	}
 	files := []string{
