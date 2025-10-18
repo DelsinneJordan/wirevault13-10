@@ -34,9 +34,92 @@
     <footer class="app-footer">
         <div class="container footer-inner">
             <small>&copy; {{currentYear}} WireVault. All rights reserved.</small>
+            <span class="footer-links">
+                <a class="footer-link" href="/privacy">Privacy policy</a>
+                <button class="footer-link footer-link--button" type="button" id="cookie-settings-trigger">Cookie settings</button>
+            </span>
             <span class="footer-badge">Powering compliance with confidence.</span>
         </div>
     </footer>
+
+    <div class="cookie-banner" id="cookie-banner" role="dialog" aria-modal="true" aria-labelledby="cookie-banner-title" aria-describedby="cookie-banner-body">
+        <div class="cookie-banner__content">
+            <h2 id="cookie-banner-title">Your cookie preferences</h2>
+            <p id="cookie-banner-body">WireVault uses essential cookies to keep sessions secure and remembers your preferences. We would also like to use optional analytics cookies to understand how the platform is used and improve it. You can accept or reject analytics at any time.</p>
+            <ul>
+                <li>Essential cookies maintain secure admin and customer sessions.</li>
+                <li>Analytics cookies (optional) help us measure feature adoption and reliability.</li>
+            </ul>
+            <p>Read our <a href="/privacy">privacy policy</a> for full details or email <a href="mailto:privacy@up2charge.com">privacy@up2charge.com</a> to exercise your rights.</p>
+        </div>
+        <div class="cookie-banner__actions">
+            <button type="button" class="btn btn-secondary" data-cookie-action="reject">Reject optional cookies</button>
+            <button type="button" class="btn" data-cookie-action="accept">Accept all cookies</button>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const banner = document.getElementById('cookie-banner');
+        if (!banner) {
+            return;
+        }
+        const cookieName = 'wv_cookie_consent';
+        const cookieSettingsTrigger = document.getElementById('cookie-settings-trigger');
+
+        function getConsent() {
+            const cookies = document.cookie.split(';').map(function(part) { return part.trim(); });
+            for (const cookie of cookies) {
+                if (cookie.indexOf(cookieName + '=') === 0) {
+                    return cookie.substring(cookie.indexOf('=') + 1);
+                }
+            }
+            return '';
+        }
+
+        function setConsent(value) {
+            const oneYear = 365 * 24 * 60 * 60;
+            document.cookie = cookieName + '=' + value + ';path=/;max-age=' + oneYear + ';SameSite=Lax';
+        }
+
+        function showBanner() {
+            banner.classList.add('cookie-banner--visible');
+            if (cookieSettingsTrigger) {
+                cookieSettingsTrigger.setAttribute('aria-expanded', 'true');
+            }
+        }
+
+        function hideBanner() {
+            banner.classList.remove('cookie-banner--visible');
+            if (cookieSettingsTrigger) {
+                cookieSettingsTrigger.setAttribute('aria-expanded', 'false');
+            }
+        }
+
+        banner.addEventListener('click', function(event) {
+            const action = event.target.getAttribute('data-cookie-action');
+            if (!action) {
+                return;
+            }
+            if (action === 'accept') {
+                setConsent('accepted');
+            } else if (action === 'reject') {
+                setConsent('rejected');
+            }
+            hideBanner();
+        });
+
+        if (cookieSettingsTrigger) {
+            cookieSettingsTrigger.addEventListener('click', function() {
+                showBanner();
+            });
+        }
+
+        if (!getConsent()) {
+            showBanner();
+        }
+    })();
+    </script>
 </body>
 </html>
 {{end}}

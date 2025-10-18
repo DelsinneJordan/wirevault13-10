@@ -66,6 +66,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/access/", h.handleAccess)
 	mux.HandleFunc("/site/", h.handleSite)
 	mux.HandleFunc("/documents/", h.handleDocument)
+	mux.HandleFunc("/privacy", h.handlePrivacy)
 
 	mux.HandleFunc("/admin/login", h.handleAdminLogin)
 	mux.HandleFunc("/admin/login/sso", h.handleAdminLoginSSO)
@@ -87,6 +88,18 @@ func (h *Handler) handleRoot(w http.ResponseWriter, r *http.Request) {
 	h.render(w, "home.html", map[string]any{
 		"Title":         "WireVault · Electrical intelligence for every site",
 		"BodyClass":     "landing",
+		"HeaderActions": publicHeaderActions,
+	})
+}
+
+func (h *Handler) handlePrivacy(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/privacy" {
+		http.NotFound(w, r)
+		return
+	}
+	h.render(w, "privacy.html", map[string]any{
+		"Title":         "WireVault · Privacy & Cookie Policy",
+		"BodyClass":     "legal",
 		"HeaderActions": publicHeaderActions,
 	})
 }
