@@ -6,7 +6,6 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8080"
-    restart: unless-stopped
     volumes:
       - wirevault_data:/app/data
       - wirevault_media:/app/media
