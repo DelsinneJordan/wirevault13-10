@@ -77,7 +77,11 @@ func (h *Handler) handleRoot(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	http.Redirect(w, r, "/admin/sites", http.StatusSeeOther)
+	h.render(w, "home.html", map[string]any{
+		"Title":         "WireVault · Electrical intelligence for every site",
+		"BodyClass":     "landing",
+		"HeaderActions": template.HTML(`<a class="btn btn-secondary" href="/admin/login">Admin login</a>`),
+	})
 }
 
 func (h *Handler) render(w http.ResponseWriter, templateName string, data any) {
