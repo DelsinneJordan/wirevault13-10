@@ -1874,10 +1874,15 @@ func (h *Handler) handleUpdateUserForm(currentUser *models.User, r *http.Request
 	newRole := target.Role
 	requestedRole := strings.ToUpper(strings.TrimSpace(r.Form.Get("role")))
 	if currentUser.Role == models.RoleOwner {
-		if requestedRole == string(models.RoleOwner) {
+		switch requestedRole {
+		case string(models.RoleOwner):
 			newRole = models.RoleOwner
-		} else {
+		case string(models.RoleAdmin):
 			newRole = models.RoleAdmin
+		case "":
+			// Keep the existing role when no value is submitted (e.g. disabled select).
+		default:
+			return "", "", "Invalid role selection."
 		}
 	} else {
 		newRole = models.RoleAdmin

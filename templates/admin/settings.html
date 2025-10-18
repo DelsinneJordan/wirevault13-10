@@ -89,6 +89,9 @@
                             <option value="ADMIN" {{if eq .Role "ADMIN"}}selected{{end}}>Admin</option>
                             <option value="OWNER" {{if eq .Role "OWNER"}}selected{{end}}>Owner</option>
                         </select>
+                        {{if not $canEditRole}}
+                        <input type="hidden" name="role" value="{{.Role}}">
+                        {{end}}
                         <div class="form-actions">
                             <button type="submit" class="btn btn-secondary" {{if not $canManage}}disabled{{end}}>Save changes</button>
                         </div>
