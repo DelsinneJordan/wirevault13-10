@@ -4,8 +4,10 @@ __pycache__/
 db.sqlite3
 .env
 .env.local
-media/
+media/*
+!media/.gitkeep
 staticfiles/
 .DS_Store
-data/
+data/*
+!data/.gitkeep
 

@@ -1,0 +1,19 @@
+services:
+  wirevault:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: wirevault:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    # Add optional environment variables here, for example:
+    # environment:
+    #   WIREVAULT_SAML_METADATA_URL: "https://idp.example.com/metadata"
+    volumes:
+      - wirevault_data:/app/data
+      - wirevault_media:/app/media
+
+volumes:
+  wirevault_data:
+  wirevault_media:

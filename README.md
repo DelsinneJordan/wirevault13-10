@@ -59,15 +59,26 @@ gofmt -w main.go core/**/*.go
 - The admin site list surfaces a token selector that links straight to `/access/{tokenShortId}` for quick verification of customer pages.
 - Uploaded media is stored on disk; ensure the `media/` directory is writable in deployment environments.
 
-## Deploying with Dokploy
+## Deploying with Docker or Portainer
 
-The repository includes a production-ready container definition (`Dockerfile`) and a Dokploy manifest (`deploy/dokploy.yaml`). You can either import the manifest directly in Dokploy or reproduce the steps manually through the UI:
+The repository ships with a production-ready `Dockerfile` and a sample Docker Compose stack at `deploy/docker-compose.yml`. You can either run the stack locally with Docker Compose or import it into Portainer as a stack template.
 
-1. **Create a project:** Import this Git repository in Dokploy and choose *Dockerfile* as the deployment method. Point the build context to the repo root and the Dockerfile to `Dockerfile`.
-2. **Start command:** Set the start command to `/app/wirevault -addr :8080` (adjust the port if you expose a different internal port).
-3. **Expose the web service:** Keep the default HTTP port at `8080`. Dokploy will proxy it through Traefik so you only need to map the internal port.
-4. **Persist application data:** Add two Docker volumes and mount them to `/app/data` and `/app/media`. These hold the JSON datastore and uploaded documents respectively.
-5. **Health check:** Point Dokploy's health check to `GET /` with a 30-second interval; the route responds with the PIN entry page when healthy.
-6. **Deploy:** Trigger a build. Dokploy will compile the Go binary in the first stage, produce the runtime image, and start the container.
+### Compose / Docker Desktop
 
-If you maintain infrastructure-as-code, check in `deploy/dokploy.yaml` and use Dokploy's Git-based deploys to keep configuration aligned with the repository. The manifest defines the web service, port exposure, persistent volumes, and a basic health probe.
+```bash
+# Build and run WireVault
+docker compose -f deploy/docker-compose.yml up -d --build
+
+# Tail logs
+docker compose -f deploy/docker-compose.yml logs -f wirevault
+```
+
+The stack exposes the application on port `8080` and creates two named volumes, `wirevault_data` and `wirevault_media`, for persistent JSON data and uploaded documents. Override the published port or volume bindings in the Compose file if your environment requires different values.
+
+### Portainer deployment
+
+1. **Create a new stack:** In Portainer, choose *Stacks → Add stack* and paste the contents of `deploy/docker-compose.yml` (or upload the file directly).
+2. **Adjust variables if needed:** Change the published port or volume bindings to match your infrastructure. You can also add extra environment variables (for example, `WIREVAULT_SAML_METADATA_URL`) to configure optional integrations.
+3. **Deploy the stack:** Portainer will build the image from the included Dockerfile, create the necessary volumes, and start the container. Once the stack is healthy, browse to `http://<your-host>:8080` to reach the PIN entry page.
+
+> **Tip:** If you prefer building images externally, push the image to a registry and replace the `build:` section in the Compose file with an `image:` reference before deploying in Portainer.
