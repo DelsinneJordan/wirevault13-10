@@ -130,3 +130,45 @@ func TestHandleUpdateSAMLFormRequiresOwner(t *testing.T) {
 		t.Fatalf("unexpected IdP metadata URL: %q", updated.IDPMetadataURL)
 	}
 }
+
+func TestHandleUpdateUserFormAllowsOwnerSelfUpdates(t *testing.T) {
+	st := newHandlerTestStore(t)
+	h := &Handler{Store: st}
+
+	users := st.ListUsers()
+	if len(users) == 0 {
+		t.Fatalf("expected default owner user")
+	}
+	owner := users[0]
+
+	req := httptest.NewRequest(http.MethodPost, "/admin/settings", nil)
+	values := url.Values{
+		"user_id":  {owner.ID},
+		"username": {"chief"},
+		"email":    {"chief@example.com"},
+	}
+	req.Form = values
+	req.PostForm = values
+
+	msg, msgType, errMsg := h.handleUpdateUserForm(owner, req)
+	if errMsg != "" {
+		t.Fatalf("unexpected error updating owner: %s", errMsg)
+	}
+	if msg != "User updated" || msgType != "success" {
+		t.Fatalf("unexpected response: msg=%q type=%q", msg, msgType)
+	}
+
+	updated, err := h.Store.GetUserByID(owner.ID)
+	if err != nil {
+		t.Fatalf("failed to fetch updated owner: %v", err)
+	}
+	if updated.Username != "chief" {
+		t.Fatalf("expected updated username, got %q", updated.Username)
+	}
+	if updated.Email != "chief@example.com" {
+		t.Fatalf("expected updated email, got %q", updated.Email)
+	}
+	if updated.Role != models.RoleOwner {
+		t.Fatalf("expected owner role to remain OWNER, got %q", updated.Role)
+	}
+}
