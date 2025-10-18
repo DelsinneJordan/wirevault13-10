@@ -1,0 +1,145 @@
+{{define "home.html"}}
+{{template "base" .}}
+{{end}}
+
+{{define "home.html#content"}}
+<section class="landing-hero">
+    <div class="landing-hero-glow"></div>
+    <div class="landing-hero-grid">
+        <div class="landing-hero-copy">
+            <span class="hero-eyebrow">Up2Charge in-house innovation</span>
+            <h1>WireVault keeps every site audit-ready.</h1>
+            <p>Deliver a premium QR-to-document journey and orchestrate compliance from a single control centre. WireVault unifies electrical boards, appliances, documentation, and QR tokens in a polished experience engineered for teams in the field and in the office.</p>
+            <div class="cta-group">
+                <a class="btn" href="/admin/login">Launch admin console</a>
+                <a class="btn btn-secondary" href="#capabilities">Explore capabilities</a>
+            </div>
+            <dl class="hero-metrics">
+                <div>
+                    <dt>20 min smart sessions</dt>
+                    <dd>Customer PIN access automatically expires to keep data fresh.</dd>
+                </div>
+                <div>
+                    <dt>Document-rich detail</dt>
+                    <dd>Boards and appliances present technical data with supporting files in a click.</dd>
+                </div>
+                <div>
+                    <dt>Origin-safe links</dt>
+                    <dd>Trusted redirects for on-site scans, remote audits, and proxy deployments.</dd>
+                </div>
+            </dl>
+        </div>
+        <div class="landing-hero-panel">
+            <div class="hero-panel-card">
+                <h2>Why teams choose WireVault</h2>
+                <ul class="panel-points">
+                    <li><span>Precision site overviews with QR-triggered sessions.</span></li>
+                    <li><span>Batch QR token generation and live status management.</span></li>
+                    <li><span>Deep appliance insights across solar, ESS, EV, heat and more.</span></li>
+                    <li><span>Secure document storage with effortless downloads for inspectors.</span></li>
+                </ul>
+                <div class="panel-footer">
+                    <p><strong>Built for Up2Charge operations.</strong><br>Designed, engineered, and iterated in-house to match real-world installation workflows.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="landing-highlights" id="capabilities">
+    <h2>Everything in one luminous workspace.</h2>
+    <p class="section-lead">WireVault brings structure to complex electrical estates so that every stakeholder has clarity. From commissioning to long-term service, the platform keeps vital knowledge flowing.</p>
+    <div class="feature-grid">
+        <article class="feature-card">
+            <header>
+                <span class="feature-icon">⚡</span>
+                <h3>Instant customer journeys</h3>
+            </header>
+            <p>QR scans funnel visitors into a branded PIN experience that guards access while keeping friction minimal. Sessions follow the user from field to office with auto-expiry protections.</p>
+        </article>
+        <article class="feature-card">
+            <header>
+                <span class="feature-icon">🗂️</span>
+                <h3>Context-rich equipment</h3>
+            </header>
+            <p>Appliances are grouped by category with tailored data points for solar inverters, storage, heat pumps, chargers, boilers, and beyond. Supporting documents live alongside every asset.</p>
+        </article>
+        <article class="feature-card">
+            <header>
+                <span class="feature-icon">🛡️</span>
+                <h3>Operational peace of mind</h3>
+            </header>
+            <p>Origin-aware routing, session controls, and privacy-conscious views ensure technicians, auditors, and customers see only what they need—reliably and securely.</p>
+        </article>
+        <article class="feature-card">
+            <header>
+                <span class="feature-icon">🧭</span>
+                <h3>Guided admin workflows</h3>
+            </header>
+            <p>Create sites, boards, and appliances in minutes. Assign QR tokens, upload documentation, and export inventories without leaving the dashboard.</p>
+        </article>
+    </div>
+</section>
+
+<section class="landing-panels">
+    <div class="panel-grid">
+        <article class="panel-card">
+            <h3>Why WireVault</h3>
+            <p>Electrical compliance used to be a maze of spreadsheets, PDFs, and siloed knowledge. WireVault centralises the narrative so that the right documents surface instantly—no matter who is on-site.</p>
+            <ul class="panel-list">
+                <li>Real-time oversight of token health and access logs.</li>
+                <li>Structured cabinet records that track inspections and next due dates.</li>
+                <li>Configurable appliance data sets tuned for renewable portfolios.</li>
+            </ul>
+        </article>
+        <article class="panel-card">
+            <h3>Crafted by Up2Charge</h3>
+            <p>WireVault is conceived, designed, and maintained by the Up2Charge product and engineering team. Every workflow mirrors our in-field expertise and evolves with the energy landscape.</p>
+            <ul class="panel-list">
+                <li>Product decisions informed by installers, auditors, and energy managers.</li>
+                <li>In-house roadmap aligned with Up2Charge service commitments.</li>
+                <li>Trusted partner network, seamless internal support, and rapid iteration.</li>
+            </ul>
+        </article>
+        <article class="panel-card">
+            <h3>Customer access in seconds</h3>
+            <p>Scan the site QR code, enter the 5-digit PIN, and the site overview appears with downloadable documentation. It is a premium customer experience that reflects the quality of Up2Charge installations.</p>
+            <div class="access-card" id="access">
+                <h4>Already have a token?</h4>
+                <p>Head to <code>wirevault.app/access/&lt;your-token&gt;</code> and enter the PIN printed on your QR sticker.</p>
+                <a class="btn btn-secondary" href="/admin/login">Support a client</a>
+            </div>
+        </article>
+    </div>
+</section>
+
+<section class="landing-stats">
+    <div class="stat-grid">
+        <div class="stat-card">
+            <span class="stat-value">360°</span>
+            <span class="stat-label">Visibility from cabinet to asset portfolio</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">24/7</span>
+            <span class="stat-label">Cloud-hosted access with Up2Charge oversight</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">Minutes</span>
+            <span class="stat-label">To generate tokens, import docs, and share securely</span>
+        </div>
+    </div>
+</section>
+
+<section class="landing-cta" id="partner">
+    <div class="cta-card">
+        <div class="cta-copy">
+            <h2>Bring clarity to every electrical installation.</h2>
+            <p>WireVault is the digital backbone for Up2Charge projects. Partner with us to deliver trusted transparency, long after the install team leaves site.</p>
+        </div>
+        <div class="cta-actions">
+            <a class="btn" href="/admin/login">Sign in</a>
+            <a class="btn btn-secondary" href="#capabilities">See the platform</a>
+        </div>
+    </div>
+</section>
+{{end}}
