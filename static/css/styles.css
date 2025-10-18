@@ -567,6 +567,7 @@ body.landing .app-header {
     border-radius: inherit;
     padding: 1px;
     background: linear-gradient(135deg, rgba(245, 180, 0, 0.75), rgba(255, 255, 255, 0.04));
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
