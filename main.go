@@ -69,7 +69,6 @@ func loadTemplates() (*template.Template, error) {
 		"templates/base.html",
 		"templates/home.html",
 		"templates/core/pin_entry.html",
-		"templates/core/site_lookup.html",
 		"templates/core/site_overview.html",
 		"templates/core/board_detail.html",
 		"templates/core/appliance_detail.html",
