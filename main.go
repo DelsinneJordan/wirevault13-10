@@ -1,15 +1,11 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"flag"
 	"html/template"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"wirevault/core/handlers"
@@ -55,8 +51,6 @@ func main() {
 }
 
 func loadTemplates() (*template.Template, error) {
-	assetVersions := map[string]string{}
-
 	funcMap := template.FuncMap{
 		"formatDateTime": func(t time.Time) string {
 			if t.IsZero() {
@@ -69,31 +63,6 @@ func loadTemplates() (*template.Template, error) {
 		},
 		"currentYear": func() int {
 			return time.Now().Year()
-		},
-		"assetPath": func(p string) string {
-			if p == "" {
-				return ""
-			}
-			if !strings.HasPrefix(p, "/") {
-				p = "/" + p
-			}
-			if !strings.HasPrefix(p, "/static/") {
-				return p
-			}
-			rel := strings.TrimPrefix(p, "/static/")
-			if version, ok := assetVersions[rel]; ok {
-				return p + "?v=" + version
-			}
-			abs := filepath.Join("static", filepath.FromSlash(rel))
-			data, err := os.ReadFile(abs)
-			if err != nil {
-				log.Printf("failed to read asset %s: %v", abs, err)
-				return p
-			}
-			sum := sha256.Sum256(data)
-			version := hex.EncodeToString(sum[:])[:12]
-			assetVersions[rel] = version
-			return p + "?v=" + version
 		},
 	}
 	files := []string{
