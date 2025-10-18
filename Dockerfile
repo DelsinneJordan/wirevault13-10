@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.6
 
 # Build stage
-FROM golang:1.22 AS builder
+FROM golang:1.24.3 AS builder
 WORKDIR /app
 
 # Enable module download caching
