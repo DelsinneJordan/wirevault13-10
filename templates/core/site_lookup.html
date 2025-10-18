@@ -1,0 +1,37 @@
+{{define "core/site_lookup.html"}}
+{{template "base" .}}
+{{end}}
+
+{{define "core/site_lookup.html#content"}}
+<section class="customer-access">
+    <div class="access-card">
+        <header class="access-card__header">
+            <h1>Find your WireVault site</h1>
+            <p>Enter the QR code short ID printed near the sticker or scan the QR code with your device camera.</p>
+        </header>
+        <form method="post" class="access-form" novalidate>
+            {{if .Error}}
+            <div class="form-alert">{{.Error}}</div>
+            {{end}}
+            <div class="form-field">
+                <label for="shortId">Manual QR code entry</label>
+                <div class="field-row">
+                    <input id="shortId" name="shortId" type="text" autocomplete="off" spellcheck="false" placeholder="e.g. QR-123" value="{{.ShortIDValue}}" required>
+                    <button class="btn" type="submit">Continue</button>
+                </div>
+                <p class="field-help">The QR code short ID appears above the sticker (letters and numbers, case sensitive).</p>
+            </div>
+        </form>
+        <div class="divider" role="presentation"><span>or</span></div>
+        <div class="qr-section">
+            <h2>Scan the QR code</h2>
+            <p>On supported mobile browsers you can open the camera, scan the QR code, and jump straight to the PIN screen.</p>
+            <button class="btn btn-secondary" type="button" data-action="scan-qr">Open camera</button>
+            <input id="qr-input" type="file" accept="image/*" capture="environment" hidden>
+            <p class="scan-status" data-scan-status></p>
+        </div>
+    </div>
+</section>
+<script src="/static/js/vendor/jsQR.js" defer></script>
+<script src="/static/js/customer_access.js" defer></script>
+{{end}}
