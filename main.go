@@ -68,6 +68,7 @@ func loadTemplates() (*template.Template, error) {
 	files := []string{
 		"templates/base.html",
 		"templates/home.html",
+		"templates/privacy.html",
 		"templates/core/pin_entry.html",
 		"templates/core/site_lookup.html",
 		"templates/core/site_overview.html",

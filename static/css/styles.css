@@ -140,6 +140,7 @@ body::after {
     color: var(--text-muted);
 }
 
+
 .footer-inner {
     display: flex;
     flex-wrap: wrap;
@@ -147,6 +148,140 @@ body::after {
     align-items: center;
     justify-content: space-between;
     font-size: 0.85rem;
+}
+
+.footer-links {
+    display: inline-flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.footer-link {
+    color: rgba(245, 180, 0, 0.9);
+    text-decoration: underline;
+    font-weight: 600;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.85rem;
+    padding: 0;
+}
+
+.footer-link:focus,
+.footer-link:hover {
+    color: #ffffff;
+}
+
+.footer-link--button {
+    text-decoration: none;
+}
+
+.cookie-banner {
+    position: fixed;
+    inset-inline: 50%;
+    bottom: 1.5rem;
+    transform: translateX(-50%) translateY(150%);
+    width: min(520px, 92vw);
+    background: rgba(16, 17, 26, 0.94);
+    border: 1px solid rgba(245, 180, 0, 0.25);
+    box-shadow: 0 35px 70px rgba(4, 5, 12, 0.65);
+    border-radius: 20px;
+    padding: 1.75rem;
+    display: grid;
+    gap: 1.5rem;
+    z-index: 20;
+    transition: transform 0.35s ease, opacity 0.35s ease;
+    opacity: 0;
+}
+
+.cookie-banner--visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.cookie-banner__content h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.3rem;
+}
+
+.cookie-banner__content p {
+    margin: 0 0 0.75rem;
+    color: var(--text-muted);
+}
+
+.cookie-banner__content ul {
+    margin: 0 0 0.75rem 1.2rem;
+    padding: 0;
+    color: var(--text-muted);
+}
+
+.cookie-banner__content a {
+    color: rgba(245, 180, 0, 0.95);
+}
+
+.cookie-banner__content a:hover,
+.cookie-banner__content a:focus {
+    color: #ffffff;
+}
+
+.cookie-banner__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: flex-end;
+}
+
+.privacy-policy {
+    display: grid;
+    gap: 2rem;
+    padding-bottom: 4rem;
+}
+
+.privacy-policy__header h1 {
+    margin-bottom: 0.75rem;
+    font-size: clamp(2rem, 4vw, 2.6rem);
+}
+
+.privacy-policy__header p {
+    max-width: 720px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.privacy-section {
+    background: rgba(21, 22, 33, 0.88);
+    border: 1px solid rgba(245, 180, 0, 0.18);
+    border-radius: 20px;
+    padding: 1.75rem;
+    box-shadow: 0 24px 50px rgba(6, 7, 16, 0.35);
+}
+
+.privacy-section h2 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    font-size: 1.4rem;
+}
+
+.privacy-section p {
+    margin: 0 0 0.75rem;
+    color: var(--text-muted);
+}
+
+.privacy-section ul {
+    margin: 0 0 0.75rem 1.3rem;
+    padding: 0;
+    color: var(--text-muted);
+}
+
+.privacy-section a {
+    color: rgba(245, 180, 0, 0.95);
+    font-weight: 500;
+}
+
+.privacy-section a:hover,
+.privacy-section a:focus {
+    color: #ffffff;
 }
 
 .footer-badge {
@@ -432,6 +567,7 @@ body.landing .app-header {
     border-radius: inherit;
     padding: 1px;
     background: linear-gradient(135deg, rgba(245, 180, 0, 0.75), rgba(255, 255, 255, 0.04));
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
