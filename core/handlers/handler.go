@@ -524,6 +524,17 @@ func (h *Handler) handleAdminLoginSSO(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	if cookie, err := r.Cookie(adminCookieName); err == nil {
+		token := cookie.Value
+		if userID, ok := h.Sessions.ValidateAdmin(token); ok {
+			if _, err := h.Store.GetUserByID(userID); err == nil {
+				http.Redirect(w, r, "/admin/sites", http.StatusSeeOther)
+				return
+			}
+			h.Sessions.RevokeAdmin(token)
+		}
+		h.clearAdminCookie(w)
+	}
 	middleware := h.getSAMLMiddleware()
 	if middleware == nil {
 		http.Redirect(w, r, "/admin/login?msg=SSO%20is%20not%20configured&type=error", http.StatusSeeOther)
